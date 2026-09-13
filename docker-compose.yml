@@ -1,0 +1,60 @@
+services:
+  database:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-mba_wordpress}
+      MARIADB_USER: ${DB_USER:-mba_wordpress}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-mba_local_password}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-mba_local_root_password}
+    volumes:
+      - database_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${WORDPRESS_PORT:-8080}:80"
+    environment:
+      WORDPRESS_DB_HOST: database:3306
+      WORDPRESS_DB_NAME: ${DB_NAME:-mba_wordpress}
+      WORDPRESS_DB_USER: ${DB_USER:-mba_wordpress}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:-mba_local_password}
+      WORDPRESS_DEBUG: ${WP_DEBUG:-true}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('DISALLOW_FILE_EDIT', true);
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wp-content/themes/mba-menuiseries:/var/www/html/wp-content/themes/mba-menuiseries
+      - ./wp-content/plugins/mba-site-core:/var/www/html/wp-content/plugins/mba-site-core
+
+  cli:
+    image: wordpress:cli-php8.3
+    profiles: ["tools"]
+    depends_on:
+      database:
+        condition: service_healthy
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: database:3306
+      WORDPRESS_DB_NAME: ${DB_NAME:-mba_wordpress}
+      WORDPRESS_DB_USER: ${DB_USER:-mba_wordpress}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:-mba_local_password}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wp-content/themes/mba-menuiseries:/var/www/html/wp-content/themes/mba-menuiseries
+      - ./wp-content/plugins/mba-site-core:/var/www/html/wp-content/plugins/mba-site-core
+
+volumes:
+  database_data:
+  wordpress_data:
+

@@ -1,0 +1,31 @@
+:root {
+	--mba-border: #d9dfdd;
+	--mba-shadow: 0 18px 45px rgb(20 32 31 / 10%);
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; }
+img { height: auto; }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+	outline: 3px solid #b67435;
+	outline-offset: 3px;
+}
+.wp-site-blocks { min-height: 100vh; }
+.mba-site-header { border-bottom: 1px solid var(--mba-border); }
+.mba-card {
+	border: 1px solid var(--mba-border);
+	box-shadow: var(--mba-shadow);
+	overflow: hidden;
+}
+.mba-card img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+.mba-eyebrow { letter-spacing: 0.12em; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+	html { scroll-behavior: auto; }
+	*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
+

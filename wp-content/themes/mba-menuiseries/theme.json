@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "1200px"
+    },
+    "color": {
+      "defaultPalette": false,
+      "palette": [
+        { "slug": "ink", "name": "Ink", "color": "#14201f" },
+        { "slug": "aluminium", "name": "Aluminium", "color": "#687473" },
+        { "slug": "mist", "name": "Mist", "color": "#eef2f1" },
+        { "slug": "white", "name": "White", "color": "#ffffff" },
+        { "slug": "accent", "name": "Accent", "color": "#b67435" }
+      ]
+    },
+    "spacing": {
+      "units": ["px", "rem", "vw"],
+      "spacingSizes": [
+        { "slug": "20", "size": "0.75rem", "name": "S" },
+        { "slug": "30", "size": "1.25rem", "name": "M" },
+        { "slug": "40", "size": "2rem", "name": "L" },
+        { "slug": "50", "size": "clamp(3rem, 6vw, 6rem)", "name": "XL" }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        { "slug": "sans", "name": "Sans", "fontFamily": "Inter, system-ui, sans-serif" },
+        { "slug": "display", "name": "Display", "fontFamily": "Georgia, serif" }
+      ]
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "var:preset|color|white",
+      "text": "var:preset|color|ink"
+    },
+    "spacing": { "blockGap": "1.5rem" },
+    "typography": {
+      "fontFamily": "var:preset|font-family|sans",
+      "fontSize": "1rem",
+      "lineHeight": "1.65"
+    },
+    "elements": {
+      "button": {
+        "border": { "radius": "2px" },
+        "color": { "background": "var:preset|color|ink", "text": "var:preset|color|white" },
+        "spacing": { "padding": { "top": "0.8rem", "right": "1.25rem", "bottom": "0.8rem", "left": "1.25rem" } },
+        "typography": { "fontWeight": "650" }
+      },
+      "heading": {
+        "typography": { "fontFamily": "var:preset|font-family|display", "fontWeight": "500", "lineHeight": "1.12" }
+      },
+      "link": { "color": { "text": "var:preset|color|ink" } }
+    }
+  },
+  "templateParts": [
+    { "name": "header", "title": "Header", "area": "header" },
+    { "name": "footer", "title": "Footer", "area": "footer" }
+  ]
+}
+

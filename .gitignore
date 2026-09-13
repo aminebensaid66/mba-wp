@@ -1,0 +1,11 @@
+.env
+.DS_Store
+*.log
+.idea/
+.vscode/
+node_modules/
+vendor/
+wordpress/
+wp-content/uploads/
+backups/
+
