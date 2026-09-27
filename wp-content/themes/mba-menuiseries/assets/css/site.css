@@ -349,13 +349,26 @@ body.admin-bar {
 	text-align: center;
 }
 
+.mba-company-gallery {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--30);
+}
+
+.mba-company-gallery img {
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
 .mba-home-final-cta .mba-button-row {
 	justify-content: center;
 }
 
 @media (width < 768px) {
 	.mba-home-cards,
-	.mba-home-split {
+	.mba-home-split,
+	.mba-company-gallery {
 		grid-template-columns: minmax(0, 1fr);
 	}
 

@@ -28,4 +28,20 @@
 		field.find('input').val('0');
 		field.find('.mba-entry-image-preview').empty();
 	});
+	$('.mba-settings-gallery-choose').on('click', function () {
+		var field = $(this).closest('.mba-settings-gallery');
+		var frame = wp.media({ title: mbaEntryAdmin.choose, library: { type: 'image' }, multiple: true });
+		frame.on('select', function () {
+			var list = field.find('.mba-settings-gallery-list').empty();
+			var ids = [];
+			frame.state().get('selection').each(function (attachment) {
+				var item = attachment.toJSON();
+				var thumb = item.sizes && item.sizes.thumbnail ? item.sizes.thumbnail.url : item.url;
+				ids.push(item.id);
+				list.append($('<span>').attr('data-id', item.id).append($('<img>').attr({ src: thumb, alt: '' })));
+			});
+			field.find('.mba-settings-gallery-ids').val(ids.join(','));
+		});
+		frame.open();
+	});
 })(jQuery);
