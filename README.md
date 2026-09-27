@@ -69,6 +69,8 @@ Reset removes the project containers and named database/media volumes and delete
 
 Never add client claims, certifications, warranties, reviews, or technical values until MBA confirms them.
 
+See [company settings API and Editor permissions](docs/company-settings.md) for global fields and template/block usage.
+
 ## Useful commands
 
 ```bash

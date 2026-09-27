@@ -54,10 +54,32 @@ function esc_url_raw( $value, $protocols ) {
 function wp_parse_url( $value, $component ) {
 	return parse_url( $value, $component );
 }
+function add_filter( $hook, $callback ) {
+	$GLOBALS['mba_product_test_filters'][ $hook ][] = $callback;
+}
+function __( $text, $domain ) {
+	return $text;
+}
+function is_email( $value ) {
+	return filter_var( $value, FILTER_VALIDATE_EMAIL );
+}
+function sanitize_email( $value ) {
+	return $value;
+}
+function wp_get_attachment_metadata( $id ) {
+	return 11 === $id ? array( 'width' => 1600, 'height' => 1200 ) : array();
+}
+function add_settings_error( $setting, $code, $message, $type ) {
+	$GLOBALS['mba_product_test_errors'][] = $code;
+}
+function get_option( $key, $default = false ) {
+	return $GLOBALS['mba_product_test_options'][ $key ] ?? $default;
+}
 
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/product-meta.php';
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/project-fields.php';
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/reusable-content.php';
+require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/settings.php';
 
 $fail = static function ( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
@@ -111,3 +133,20 @@ foreach ( array( 'mba_faq', 'mba_testimonial', 'mba_partner' ) as $type ) {
 	isset( $GLOBALS['mba_product_test_meta'][ $type ]['mba_display_order'] ) || $fail( "Missing {$type} ordering." );
 }
 echo "Reusable content metadata assertions passed.\n";
+
+'+21612345678' === mba_core_sanitize_phone( '+216 (12) 345-678' ) || $fail( 'International phone formatting must normalize safely.' );
+'' === mba_core_sanitize_phone( '12345678' ) || $fail( 'Phone country code must not be guessed.' );
+'' === mba_core_sanitize_phone( '+216call12345678' ) || $fail( 'Phone letters must not be silently removed.' );
+$settings = mba_core_sanitize_settings( array( 'mba_phone' => '+216 12 345 678', 'mba_email' => 'invalid', 'mba_maps_embed_url' => 'https://evil.example/maps/embed', 'unknown' => 'untrusted' ) );
+'+21612345678' === $settings['mba_phone'] || $fail( 'Canonical phone missing from settings.' );
+'' === $settings['mba_email'] || $fail( 'Invalid email must be rejected.' );
+'' === $settings['mba_maps_embed_url'] || $fail( 'Unapproved embed source must be rejected.' );
+! isset( $settings['unknown'] ) || $fail( 'Unknown settings must be rejected.' );
+0 === mba_core_validate_setting( 'favicon', 11 ) || $fail( 'Non-square favicon must be rejected.' );
+$GLOBALS['mba_product_test_options']['mba_site_settings'] = $settings;
+'+216 12 345 678' === mba_core_phone_display() || $fail( 'Display phone must derive from canonical global value.' );
+'tel:+21612345678' === mba_core_phone_url() || $fail( 'Telephone link must use canonical global value.' );
+'' === mba_core_whatsapp_url() || $fail( 'Missing WhatsApp must not invent a number.' );
+'' === mba_core_setting( 'mba_quote_response_time' ) || $fail( 'Missing response time must not invent a promise.' );
+'' === mba_core_render_company_block( array( 'key' => 'unknown' ) ) || $fail( 'Unknown company block must render nothing.' );
+echo "Company settings assertions passed.\n";
