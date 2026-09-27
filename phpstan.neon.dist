@@ -8,5 +8,5 @@ parameters:
     excludePaths:
         analyse:
             - vendor
-            - node_modules
+            - node_modules (?)
     treatPhpDocTypesAsCertain: false
