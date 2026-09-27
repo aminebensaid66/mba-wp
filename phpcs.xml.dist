@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="MBA WordPress">
+  <description>WordPress coding standards for custom MBA code.</description>
+  <file>wp-content/plugins/mba-site-core</file>
+  <file>wp-content/themes/mba-menuiseries</file>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+  <rule ref="WordPress-Core" />
+  <config name="minimum_supported_wp_version" value="6.6" />
+  <arg name="extensions" value="php" />
+  <arg value="ps" />
+</ruleset>

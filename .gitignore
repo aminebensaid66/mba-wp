@@ -9,3 +9,6 @@ wordpress/
 wp-content/uploads/
 backups/
 
+.phpunit.result.cache
+.phpstan.cache
+coverage/
