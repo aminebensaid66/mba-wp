@@ -94,3 +94,7 @@ Open `/realisations/` and submit the project type, general location, and install
 ## Project detail verification (issue #15)
 
 Open a published project with case-study fields and before/during/after media. Verify missing phases and specifications do not create empty sections, galleries expose captions and useful alt text, image buttons open a dialog that closes with Escape and returns focus, and related-project links preserve `from_project` context. Confirm the page only displays city/region and never a private street address.
+
+## Blog verification (issue #16)
+
+Open `/conseils/`, a category archive, and a published article. Verify category links, nine-item pagination, cover/excerpt cards, readable article width, visible published/updated/author metadata, related articles, and the contextual quote CTA. Confirm article content remains editable through the native post editor.
