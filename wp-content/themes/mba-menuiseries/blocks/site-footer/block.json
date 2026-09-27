@@ -1,0 +1,7 @@
+{
+  "apiVersion": 3,
+  "name": "mba/site-footer",
+  "title": "MBA footer",
+  "category": "theme",
+  "supports": { "html": false, "inserter": false }
+}
