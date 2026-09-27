@@ -1,5 +1,7 @@
 parameters:
     level: 5
+    parallel:
+        maximumNumberOfProcesses: 1
     paths:
         - wp-content/plugins/mba-site-core
         - wp-content/themes/mba-menuiseries/functions.php
