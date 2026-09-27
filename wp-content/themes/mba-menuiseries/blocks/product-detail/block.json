@@ -1,0 +1,7 @@
+{
+  "apiVersion": 3,
+  "name": "mba/product-detail",
+  "title": "MBA product detail",
+  "category": "theme",
+  "supports": { "html": false, "inserter": false }
+}

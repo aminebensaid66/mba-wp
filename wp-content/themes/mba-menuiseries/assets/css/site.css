@@ -438,6 +438,71 @@ body.admin-bar {
 	text-align: center;
 }
 
+.mba-product-hero {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: clamp(2rem, 5vw, 5rem);
+	align-items: center;
+	background: var(--wp--preset--color--mist);
+}
+
+.mba-product-hero__media img {
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
+.mba-detail-list {
+	padding-left: 1.25rem;
+}
+
+.mba-detail-specs {
+	display: grid;
+	grid-template-columns: minmax(10rem, 0.4fr) minmax(0, 1fr);
+	margin: 0;
+	border-top: 1px solid var(--mba-border);
+}
+
+.mba-detail-specs dt,
+.mba-detail-specs dd {
+	margin: 0;
+	padding: 0.75rem;
+	border-bottom: 1px solid var(--mba-border);
+}
+
+.mba-detail-specs dt {
+	font-weight: 650;
+}
+
+.mba-product-gallery {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--20);
+}
+
+.mba-product-gallery img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
+.mba-product-detail-section details {
+	border-top: 1px solid var(--mba-border);
+	padding: 1rem 0;
+}
+
+.mba-product-detail-section summary {
+	cursor: pointer;
+	font-weight: 650;
+	padding: 0.5rem 0;
+}
+
+.mba-file-meta {
+	margin-left: 0.5rem;
+	font-size: 0.9rem;
+}
+
 .mba-home-final-cta .mba-button-row {
 	justify-content: center;
 }
@@ -446,7 +511,9 @@ body.admin-bar {
 	.mba-home-cards,
 	.mba-home-split,
 	.mba-company-gallery,
-	.mba-product-grid {
+	.mba-product-grid,
+	.mba-product-hero,
+	.mba-product-gallery {
 		grid-template-columns: minmax(0, 1fr);
 	}
 

@@ -82,3 +82,7 @@ Create or open the `/entreprise/` page and confirm the `page-entreprise.html` te
 ## Product archive verification (issue #12)
 
 Open `/produits/` and verify the category and application filters submit normal GET requests with shareable `categorie` and `application` parameters. Valid selections remain selected after reload, pagination preserves both parameters, and reset removes them. Cards show owner-managed cover/title/excerpt/category data and remain usable without a cover image. A filter with no matches renders a status empty state with reset and quote links. Check keyboard labels, visible focus, and 360–1440 px layouts with JavaScript disabled.
+
+## Product detail verification (issue #13)
+
+Open a published Product and verify the page renders its cover, short description, optional benefits/configurations/materials/glazing/colors/applications/maintenance, labeled verified performance rows, responsive gallery links, and related FAQs/projects/products only when populated. Gallery links must preserve Media Library captions/alt text and expose full-size targets for a lightbox. The technical document must show a PDF link with `application/pdf` and file size when the local file exists. The quote URL must include the current `product_id` and `product_slug`; related products must exclude the current product. Empty metadata must not leave blank headings or placeholder claims.
