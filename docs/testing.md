@@ -62,3 +62,7 @@ The metadata checks also cover real calendar dates, testimonial target validatio
 ## Reusable content verification (issue #7)
 
 Use FAQ titles as questions and the main editor as answers; link products and verify reverse `mba_related_faqs` IDs after saving/removing links. All three content types expose display order. Partner logos accept images only, and website links accept HTTP/HTTPS. Testimonials accept optional ratings from 1–5. Try featuring a testimonial without consent via both the editor and direct metadata updates; it must remain unfeatured. Confirm consent, feature it, then withdraw consent: featuring must be removed. Review text, FAQ answers, and partner descriptions stay in native WordPress content with revisions. Public optional-field rendering is covered by the homepage, product, and FAQ templates.
+
+## Global settings verification (issue #8)
+
+The field tests cover international phone normalization, rejection of invalid email/map sources/unknown keys, favicon dimensions, and omission of missing company details. Sign in as an Editor: MBA Settings must be accessible and save through the native options form, while plugin installation and file editing remain unavailable. Save a formatted phone number and check the canonical value, readable display, telephone URL, WhatsApp URL, and `mba/company-detail` block. Change or clear the number and confirm those outputs change together. Invalid map embed sources must produce one validation error. See [the documented API](company-settings.md) for future template consumers.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MBA Site Core
  * Description: Durable content types and business settings for MBA Menuiseries Belhaj Ali.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Author: MBA Menuiseries
  * Text Domain: mba-site-core
  * Domain Path: /languages
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MBA_CORE_VERSION', '0.5.0' );
+define( 'MBA_CORE_VERSION', '0.6.0' );
 define( 'MBA_CORE_PATH', plugin_dir_path( __FILE__ ) );
 
 require_once MBA_CORE_PATH . 'includes/content-types.php';
@@ -31,6 +31,7 @@ require_once MBA_CORE_PATH . 'includes/settings.php';
  */
 function mba_core_activate(): void {
 	mba_core_register_content_types();
+	mba_core_install_owner_caps();
 	flush_rewrite_rules();
 }
 
