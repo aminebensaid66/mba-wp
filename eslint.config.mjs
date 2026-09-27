@@ -14,5 +14,16 @@ export default [
         console: 'readonly'
       }
     }
+  },
+  {
+    files: ['wp-content/plugins/mba-site-core/assets/js/*.js'],
+    languageOptions: {
+      globals: {
+        document: 'readonly',
+        jQuery: 'readonly',
+        wp: 'readonly',
+        mbaProductAdmin: 'readonly'
+      }
+    }
   }
 ];

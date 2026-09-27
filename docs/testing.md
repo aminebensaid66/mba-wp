@@ -50,3 +50,7 @@ Manual acceptance still requires rendering representative content at 360, 390/43
 `composer check` runs `tests/php/content-types-test.php`. It asserts all five owner-facing post types, REST/Gutenberg support, normal editor capability mapping, revisions, public product/project archives, private FAQ/testimonial/partner behavior, required taxonomies, and the absence of rewrite flushing during normal `init` registration.
 
 The Docker smoke test additionally verifies that the content types remain registered while another installed theme is active, then restores MBA Menuiseries. This demonstrates that durable business content is plugin-owned rather than theme-owned.
+
+## Product editing verification (issue #5)
+
+`composer check` validates product metadata schemas, media types, relationship targets, and optional performance values. In a live WordPress installation, create a draft Product and verify that the structured fields survive a Gutenberg save and reload. Set its cover image through the native Featured Image control and assign gallery images through the Media Library; the gallery must retain editor order and discard non-image IDs. A technical document must be an existing PDF attachment. Select a FAQ and a Project, save, and confirm each related record gains the product ID in `mba_related_products`; removing a selection or deleting the product must remove its backlink. The product detail/gallery presentation belongs to issues #13 and #23.

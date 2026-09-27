@@ -1,0 +1,104 @@
+.mba-product-fields {
+	max-width: 1100px;
+}
+
+.mba-guidance {
+	padding: 12px 14px;
+	background: #f0f6fc;
+	border-left: 4px solid #2271b1;
+}
+
+.mba-field {
+	margin: 18px 0;
+}
+
+.mba-field > label {
+	display: block;
+	margin-bottom: 6px;
+}
+
+.mba-required {
+	color: #8a2424;
+	font-size: 12px;
+	margin-left: 6px;
+}
+
+.mba-optional {
+	color: #646970;
+	font-size: 12px;
+	font-weight: 400;
+	margin-left: 6px;
+}
+
+.mba-grid-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px 24px;
+}
+
+.mba-compact-fields {
+	align-items: end;
+}
+
+.mba-repeater-row,
+.mba-performance-row,
+.mba-finish-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.mba-performance-row input,
+.mba-finish-row > input[type="text"] {
+	flex: 1;
+}
+
+.mba-gallery-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 10px 0;
+}
+
+.mba-gallery-list li {
+	position: relative;
+	cursor: move;
+	margin: 0;
+}
+
+.mba-gallery-list img,
+.mba-finish-preview img {
+	width: 96px;
+	height: 72px;
+	object-fit: cover;
+	display: block;
+}
+
+.mba-gallery-remove {
+	position: absolute;
+	top: 2px;
+	right: 4px;
+	background: #fff !important;
+	border-radius: 50%;
+	line-height: 1;
+}
+
+.mba-document-label {
+	display: inline-block;
+	margin-right: 10px;
+	min-width: 160px;
+}
+
+@media (width <= 782px) {
+	.mba-grid-fields {
+		grid-template-columns: 1fr;
+	}
+
+	.mba-repeater-row,
+	.mba-performance-row,
+	.mba-finish-row {
+		align-items: stretch;
+		flex-direction: column;
+	}
+}

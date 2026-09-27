@@ -59,7 +59,7 @@ Reset removes the project containers and named database/media volumes and delete
 
 ## Content editing
 
-- Products and their featured photos: **Products**
+- Products, cover/gallery photos, technical PDFs, optional specifications, FAQs, and related projects: **Products**
 - Completed work and galleries: **Projects**
 - Frequently asked questions: **FAQs**
 - Reviews: **Testimonials**
