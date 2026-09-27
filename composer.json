@@ -25,8 +25,10 @@
       "@phpcs",
       "@phpstan",
       "@test:theme",
+      "@test:content-types",
       "@test:lint-failure"
     ],
-    "test:theme": "@php tests/theme/theme-foundation.php"
+    "test:theme": "@php tests/theme/theme-foundation.php",
+    "test:content-types": "@php tests/php/content-types-test.php"
   }
 }

@@ -44,3 +44,9 @@ Quality tools exclude generated/dependency/state directories: `vendor/`, `node_m
 `composer check` also runs `tests/theme/theme-foundation.php`, which guards centralized theme tokens, all required responsive breakpoints, minimum touch-target treatment, reduced-motion handling, flexible image cropping, and the absence of a fixed viewport minimum that would block zoom/reflow.
 
 Manual acceptance still requires rendering representative content at 360, 390/430, 768, 1024, and 1440 px and at 200% browser zoom. Check keyboard focus, portrait/landscape uploads, text reflow, and reduced-motion behavior in a real WordPress/browser environment; do not treat the static assertions as a substitute for that review.
+
+## Content-type verification (issue #4)
+
+`composer check` runs `tests/php/content-types-test.php`. It asserts all five owner-facing post types, REST/Gutenberg support, normal editor capability mapping, revisions, public product/project archives, private FAQ/testimonial/partner behavior, required taxonomies, and the absence of rewrite flushing during normal `init` registration.
+
+The Docker smoke test additionally verifies that the content types remain registered while another installed theme is active, then restores MBA Menuiseries. This demonstrates that durable business content is plugin-owned rather than theme-owned.

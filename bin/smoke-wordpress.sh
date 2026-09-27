@@ -33,4 +33,14 @@ if docker compose exec -T wordpress sh -lc 'test -f /var/www/html/wp-content/deb
   exit 1
 fi
 
-echo "Smoke test passed: activation, product/media creation, restart persistence, and PHP warning scan."
+inactive_theme="$(run_wp theme list --status=inactive --field=name | head -n 1 || true)"
+if [ -n "$inactive_theme" ]; then
+  run_wp theme activate "$inactive_theme" >/dev/null
+  run_wp post-type get mba_product --field=name | grep -qx 'mba_product'
+  run_wp post-type get mba_project --field=name | grep -qx 'mba_project'
+  run_wp theme activate mba-menuiseries >/dev/null
+else
+  echo "No inactive bundled theme was available; theme-independence runtime switch was skipped." >&2
+fi
+
+echo "Smoke test passed: activation, product/media creation, restart persistence, PHP warning scan, and theme independence when an inactive bundled theme is available."
