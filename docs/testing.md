@@ -95,6 +95,10 @@ Open `/realisations/` and submit the project type, general location, and install
 
 Open a published project with case-study fields and before/during/after media. Verify missing phases and specifications do not create empty sections, galleries expose captions and useful alt text, image buttons open a dialog that closes with Escape and returns focus, and related-project links preserve `from_project` context. Confirm the page only displays city/region and never a private street address.
 
+## FAQ verification (issue #17)
+
+Open `/faq/` and category links. Verify questions and answers come from published FAQ entries, category selection is shareable, buttons expose `aria-expanded`/`aria-controls`, keyboard activation works, and all answers remain visible when JavaScript is disabled. Confirm no FAQ schema is emitted for unsupported or empty content.
+
 ## Blog verification (issue #16)
 
 Open `/conseils/`, a category archive, and a published article. Verify category links, nine-item pagination, cover/excerpt cards, readable article width, visible published/updated/author metadata, related articles, and the contextual quote CTA. Confirm article content remains editable through the native post editor.
