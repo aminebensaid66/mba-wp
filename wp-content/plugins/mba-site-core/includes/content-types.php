@@ -61,7 +61,10 @@ function mba_core_register_content_types(): void {
 				'publicly_queryable' => true,
 				'exclude_from_search' => false,
 				'has_archive'        => 'produits',
-				'rewrite'            => array( 'slug' => 'produits', 'with_front' => false ),
+				'rewrite'            => array(
+					'slug' => 'produits',
+					'with_front' => false,
+				),
 				'menu_icon'          => 'dashicons-screenoptions',
 				'menu_position'      => 20,
 			)
@@ -78,7 +81,10 @@ function mba_core_register_content_types(): void {
 				'publicly_queryable' => true,
 				'exclude_from_search' => false,
 				'has_archive'        => 'realisations',
-				'rewrite'            => array( 'slug' => 'realisations', 'with_front' => false ),
+				'rewrite'            => array(
+					'slug' => 'realisations',
+					'with_front' => false,
+				),
 				'menu_icon'          => 'dashicons-format-gallery',
 				'menu_position'      => 21,
 			)
@@ -147,7 +153,10 @@ function mba_core_register_content_types(): void {
 			'show_in_rest'      => true,
 			'hierarchical'      => true,
 			'show_admin_column' => true,
-			'rewrite'           => array( 'slug' => 'categorie-produit', 'with_front' => false ),
+			'rewrite'           => array(
+				'slug' => 'categorie-produit',
+				'with_front' => false,
+			),
 		)
 	);
 
@@ -163,7 +172,10 @@ function mba_core_register_content_types(): void {
 			'show_in_rest'      => true,
 			'hierarchical'      => true,
 			'show_admin_column' => true,
-			'rewrite'           => array( 'slug' => 'application', 'with_front' => false ),
+			'rewrite'           => array(
+				'slug' => 'application',
+				'with_front' => false,
+			),
 		)
 	);
 
@@ -179,7 +191,10 @@ function mba_core_register_content_types(): void {
 			'show_in_rest'      => true,
 			'hierarchical'      => true,
 			'show_admin_column' => true,
-			'rewrite'           => array( 'slug' => 'type-projet', 'with_front' => false ),
+			'rewrite'           => array(
+				'slug' => 'type-projet',
+				'with_front' => false,
+			),
 		)
 	);
 
@@ -195,7 +210,10 @@ function mba_core_register_content_types(): void {
 			'show_in_rest'      => true,
 			'hierarchical'      => true,
 			'show_admin_column' => true,
-			'rewrite'           => array( 'slug' => 'lieu-projet', 'with_front' => false ),
+			'rewrite'           => array(
+				'slug' => 'lieu-projet',
+				'with_front' => false,
+			),
 		)
 	);
 

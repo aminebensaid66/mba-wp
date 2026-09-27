@@ -22,7 +22,7 @@ docker compose config --quiet
 docker compose up -d database wordpress
 
 attempt=0
-until docker compose --profile tools run --rm cli core version >/dev/null 2>&1; do
+until docker compose --profile tools run --rm cli wp core version >/dev/null 2>&1; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 30 ]; then
     echo "WordPress files did not become ready in time." >&2
@@ -32,8 +32,8 @@ until docker compose --profile tools run --rm cli core version >/dev/null 2>&1; 
   sleep 2
 done
 
-if ! docker compose --profile tools run --rm cli core is-installed >/dev/null 2>&1; then
-  docker compose --profile tools run --rm cli core install \
+if ! docker compose --profile tools run --rm cli wp core is-installed >/dev/null 2>&1; then
+  docker compose --profile tools run --rm cli wp core install \
     --url="$WP_SITE_URL" \
     --title="$WP_SITE_TITLE" \
     --admin_user="$WP_ADMIN_USER" \
@@ -42,7 +42,7 @@ if ! docker compose --profile tools run --rm cli core is-installed >/dev/null 2>
     --skip-email
 fi
 
-docker compose --profile tools run --rm cli plugin activate mba-site-core
-docker compose --profile tools run --rm cli theme activate mba-menuiseries
+docker compose --profile tools run --rm cli wp plugin activate mba-site-core
+docker compose --profile tools run --rm cli wp theme activate mba-menuiseries
 
 echo "MBA local WordPress is ready at $WP_SITE_URL"

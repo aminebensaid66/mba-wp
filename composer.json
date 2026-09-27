@@ -18,7 +18,7 @@
   "scripts": {
     "lint:php": "@php ./bin/lint-php.php",
     "phpcs": "phpcs -n",
-    "phpstan": "phpstan analyse --no-progress",
+    "phpstan": "phpstan analyse --no-progress --memory-limit=512M",
     "test:lint-failure": "sh ./tests/ci/assert-invalid-php-fails.sh",
     "check": [
       "@lint:php",

@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 [ -f .env ] || { echo "Run ./bin/setup.sh first." >&2; exit 1; }
 
 run_wp() {
-  docker compose --profile tools run --rm cli "$@"
+  docker compose --profile tools run --rm cli wp "$@"
 }
 
 run_wp plugin is-active mba-site-core

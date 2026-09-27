@@ -33,4 +33,3 @@ function mba_theme_enqueue_assets(): void {
 	);
 }
 add_action( 'wp_enqueue_scripts', 'mba_theme_enqueue_assets' );
-
