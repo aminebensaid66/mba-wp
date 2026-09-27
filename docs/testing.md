@@ -90,3 +90,7 @@ Open a published Product and verify the page renders its cover, short descriptio
 ## Projects archive verification (issue #14)
 
 Open `/realisations/` and submit the project type, general location, and installed-product filters as normal GET parameters (`type_projet`, `lieu`, and `produit`). Verify selected values and pagination survive reload, cards show cover/name/general location/year/installed product names, and no street address is printed. Missing covers still leave usable cards; image crops stay consistent through CSS without modifying originals. Empty results provide reset and quote links and announce their status.
+
+## Project detail verification (issue #15)
+
+Open a published project with case-study fields and before/during/after media. Verify missing phases and specifications do not create empty sections, galleries expose captions and useful alt text, image buttons open a dialog that closes with Escape and returns focus, and related-project links preserve `from_project` context. Confirm the page only displays city/region and never a private street address.
