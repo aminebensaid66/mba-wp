@@ -74,3 +74,7 @@ At desktop width, confirm the sticky header exposes the owner-editable company n
 ## Homepage verification (issue #10)
 
 The front page is a locked server-rendered composition. Set homepage hero/section text and approved image IDs in MBA Settings, then replace those images through the Media Library; no template markup changes are needed. The page keeps one H1 and two hero actions, hides empty trust/reason/process/material sections, and uses featured products/projects/testimonials/partners with display-order fallbacks. Testimonials require publication consent; latest published articles appear only when available. Verify the ordered sections from `PROJECT.md`, the neutral fallback heading, no legacy placeholder claim, and the final quote/WhatsApp/telephone actions when valid global settings exist. Test at 360, 390/430, 768, 1024, and 1440 px with 200% zoom.
+
+## Company page verification (issue #11)
+
+Create or open the `/entreprise/` page and confirm the `page-entreprise.html` template renders the settings-driven history, founder/team, values, capabilities, workshop/team gallery, verified certifications, service zones, featured projects, and quote CTA. Replace gallery images through MBA Settings and the Media Library; empty team/certification/gallery sections must disappear. Do not enter unverified certifications or private addresses. Confirm project cards and the quote link work at mobile and desktop widths.

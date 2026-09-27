@@ -51,6 +51,12 @@ function mba_core_settings_fields(): array {
 		'mba_homepage_intro_image_id' => array( __( 'Homepage introduction image', 'mba-site-core' ), 'image', '' ),
 		'mba_homepage_process_image_id' => array( __( 'Homepage process image', 'mba-site-core' ), 'image', '' ),
 		'mba_homepage_materials_image_id' => array( __( 'Homepage materials image', 'mba-site-core' ), 'image', '' ),
+		'mba_company_history' => array( __( 'Company history', 'mba-site-core' ), 'textarea', '' ),
+		'mba_company_founder_team' => array( __( 'Founder and team', 'mba-site-core' ), 'textarea', '' ),
+		'mba_company_values' => array( __( 'Values and quality approach', 'mba-site-core' ), 'textarea', '' ),
+		'mba_company_capabilities' => array( __( 'Capabilities and services', 'mba-site-core' ), 'textarea', __( 'One confirmed capability per line.', 'mba-site-core' ) ),
+		'mba_company_certifications' => array( __( 'Certifications and verified claims', 'mba-site-core' ), 'textarea', __( 'Leave blank until each claim is supplied and verified.', 'mba-site-core' ) ),
+		'mba_company_workshop_gallery' => array( __( 'Workshop/team gallery', 'mba-site-core' ), 'gallery', __( 'Use approved images with captions and alt text; confirm publication consent.', 'mba-site-core' ) ),
 	);
 	$result = array();
 	foreach ( $fields as $key => $field ) {
@@ -82,7 +88,7 @@ function mba_core_sanitize_phone( $value ): string {
  *
  * @param string $type  Field type.
  * @param mixed  $value Input.
- * @return string|int
+ * @return string|int|array<int>
  */
 function mba_core_validate_setting( string $type, $value ) {
 	if ( in_array( $type, array( 'image', 'favicon' ), true ) ) {
@@ -94,6 +100,10 @@ function mba_core_validate_setting( string $type, $value ) {
 			}
 		}
 		return $id;
+	}
+	if ( 'gallery' === $type ) {
+		$values = is_array( $value ) ? $value : explode( ',', (string) $value );
+		return mba_core_sanitize_image_id_list( $values );
 	}
 	if ( ! is_string( $value ) ) {
 		return '';
@@ -317,6 +327,18 @@ function mba_core_render_setting( array $args ): void {
 	$name = 'mba_site_settings[' . $key . ']';
 	if ( in_array( $field['type'], array( 'image', 'favicon' ), true ) ) {
 		printf( '<div class="mba-entry-image"><input type="hidden" id="%1$s" name="%2$s" value="%3$s"><div class="mba-entry-image-preview">%4$s</div><button type="button" class="button mba-entry-image-choose">%5$s</button> <button type="button" class="button-link-delete mba-entry-image-remove">%6$s</button></div>', esc_attr( $key ), esc_attr( $name ), esc_attr( (string) $value ), $value ? wp_kses_post( wp_get_attachment_image( (int) $value, 'thumbnail' ) ) : '', esc_html__( 'Choose image', 'mba-site-core' ), esc_html__( 'Remove image', 'mba-site-core' ) );
+	} elseif ( 'gallery' === $field['type'] ) {
+		$ids = array();
+		if ( is_array( $value ) ) {
+			$ids = $value;
+		}
+		printf( '<div class="mba-settings-gallery"><input type="hidden" class="mba-settings-gallery-ids" name="%1$s" value="%2$s"><div class="mba-settings-gallery-list">', esc_attr( $name ), esc_attr( implode( ',', $ids ) ) );
+		if ( $ids ) {
+			foreach ( $ids as $id ) {
+				echo '<span data-id="' . esc_attr( (string) $id ) . '">' . wp_kses_post( wp_get_attachment_image( (int) $id, 'thumbnail' ) ) . '</span>';
+			}
+		}
+		echo '</div><button type="button" class="button mba-settings-gallery-choose">' . esc_html__( 'Choose gallery images', 'mba-site-core' ) . '</button></div>';
 	} elseif ( 'textarea' === $field['type'] ) {
 		printf( '<textarea class="large-text" rows="3" id="%1$s" name="%2$s">%3$s</textarea>', esc_attr( $key ), esc_attr( $name ), esc_textarea( (string) $value ) );
 	} else {
