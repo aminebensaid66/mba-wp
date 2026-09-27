@@ -78,3 +78,7 @@ The front page is a locked server-rendered composition. Set homepage hero/sectio
 ## Company page verification (issue #11)
 
 Create or open the `/entreprise/` page and confirm the `page-entreprise.html` template renders the settings-driven history, founder/team, values, capabilities, workshop/team gallery, verified certifications, service zones, featured projects, and quote CTA. Replace gallery images through MBA Settings and the Media Library; empty team/certification/gallery sections must disappear. Do not enter unverified certifications or private addresses. Confirm project cards and the quote link work at mobile and desktop widths.
+
+## Product archive verification (issue #12)
+
+Open `/produits/` and verify the category and application filters submit normal GET requests with shareable `categorie` and `application` parameters. Valid selections remain selected after reload, pagination preserves both parameters, and reset removes them. Cards show owner-managed cover/title/excerpt/category data and remain usable without a cover image. A filter with no matches renders a status empty state with reset and quote links. Check keyboard labels, visible focus, and 360–1440 px layouts with JavaScript disabled.
