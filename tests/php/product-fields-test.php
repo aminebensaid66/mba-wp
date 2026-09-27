@@ -12,6 +12,7 @@ $GLOBALS['mba_product_test_types'] = array(
 	21 => 'mba_faq',
 	22 => 'mba_project',
 	23 => 'mba_product',
+	24 => 'mba_testimonial',
 );
 
 function add_action( $hook, $callback ) {
@@ -49,6 +50,7 @@ function current_user_can( $capability, $post_id ) {
 }
 
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/product-meta.php';
+require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/project-fields.php';
 
 $fail = static function ( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
@@ -78,3 +80,15 @@ foreach ( array( 'mba_project', 'mba_faq' ) as $type ) {
 }
 
 echo "Product metadata assertions passed.\n";
+
+'' === mba_core_sanitize_project_date( '2025-02-29' ) || $fail( 'Invalid calendar dates must be rejected.' );
+'' === mba_core_sanitize_project_date( '29/02/2024' ) || $fail( 'Ambiguous date formats must be rejected.' );
+'2024-02-29' === mba_core_sanitize_project_date( '2024-02-29' ) || $fail( 'Real leap dates must be accepted.' );
+24 === mba_core_sanitize_testimonial_id( 24 ) || $fail( 'Testimonial relationship must accept testimonials.' );
+0 === mba_core_sanitize_testimonial_id( 23 ) || $fail( 'Testimonial relationship must reject products.' );
+mba_core_register_project_meta();
+foreach ( array( 'mba_location_city', 'mba_location_region', 'mba_completion_date', 'mba_challenge', 'mba_solution', 'mba_result', 'mba_materials', 'mba_profiles', 'mba_glazing', 'mba_colors', 'mba_gallery_before', 'mba_gallery_during', 'mba_gallery_after', 'mba_testimonial', 'mba_featured', 'mba_display_order' ) as $key ) {
+	isset( $GLOBALS['mba_product_test_meta']['mba_project'][ $key ] ) || $fail( "Missing project field {$key}." );
+}
+! isset( $GLOBALS['mba_product_test_meta']['mba_project']['mba_street_address'] ) || $fail( 'Project fields must not request a private street address.' );
+echo "Project metadata assertions passed.\n";

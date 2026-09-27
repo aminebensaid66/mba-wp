@@ -15,16 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function mba_core_register_meta_fields(): void {
 	$fields = array(
-		'mba_project' => array(
-			'mba_location_city'   => 'string',
-			'mba_location_region' => 'string',
-			'mba_completion_date' => 'string',
-			'mba_challenge'       => 'string',
-			'mba_solution'        => 'string',
-			'mba_result'          => 'string',
-			'mba_featured'        => 'boolean',
-			'mba_display_order'   => 'integer',
-		),
 		'mba_testimonial' => array(
 			'mba_customer_label'              => 'string',
 			'mba_customer_location'           => 'string',

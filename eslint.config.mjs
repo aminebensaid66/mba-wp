@@ -22,7 +22,8 @@ export default [
         document: 'readonly',
         jQuery: 'readonly',
         wp: 'readonly',
-        mbaProductAdmin: 'readonly'
+        mbaProductAdmin: 'readonly',
+        mbaProjectAdmin: 'readonly'
       }
     }
   }
