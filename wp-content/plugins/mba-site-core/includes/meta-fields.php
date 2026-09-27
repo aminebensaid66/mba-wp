@@ -65,4 +65,3 @@ function mba_core_register_meta_fields(): void {
 	}
 }
 add_action( 'init', 'mba_core_register_meta_fields' );
-

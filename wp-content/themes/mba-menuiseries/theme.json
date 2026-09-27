@@ -7,31 +7,64 @@
       "contentSize": "760px",
       "wideSize": "1200px"
     },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true
+    },
     "color": {
+      "defaultGradients": false,
       "defaultPalette": false,
       "palette": [
         { "slug": "ink", "name": "Ink", "color": "#14201f" },
-        { "slug": "aluminium", "name": "Aluminium", "color": "#687473" },
+        { "slug": "aluminium", "name": "Aluminium", "color": "#5f6b69" },
         { "slug": "mist", "name": "Mist", "color": "#eef2f1" },
         { "slug": "white", "name": "White", "color": "#ffffff" },
-        { "slug": "accent", "name": "Accent", "color": "#b67435" }
+        { "slug": "accent", "name": "Accent", "color": "#8a4a14" }
       ]
     },
     "spacing": {
-      "units": ["px", "rem", "vw"],
+      "units": ["px", "rem", "%", "vw"],
       "spacingSizes": [
+        { "slug": "10", "size": "0.5rem", "name": "XS" },
         { "slug": "20", "size": "0.75rem", "name": "S" },
         { "slug": "30", "size": "1.25rem", "name": "M" },
         { "slug": "40", "size": "2rem", "name": "L" },
-        { "slug": "50", "size": "clamp(3rem, 6vw, 6rem)", "name": "XL" }
+        { "slug": "50", "size": "clamp(2.5rem, 5vw, 5rem)", "name": "XL" },
+        { "slug": "60", "size": "clamp(4rem, 8vw, 8rem)", "name": "XXL" }
       ]
     },
     "typography": {
       "fluid": true,
       "fontFamilies": [
-        { "slug": "sans", "name": "Sans", "fontFamily": "Inter, system-ui, sans-serif" },
-        { "slug": "display", "name": "Display", "fontFamily": "Georgia, serif" }
+        { "slug": "sans", "name": "Sans", "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" },
+        { "slug": "display", "name": "Display", "fontFamily": "Georgia, \"Times New Roman\", serif" }
+      ],
+      "fontSizes": [
+        { "slug": "small", "name": "Small", "size": "0.875rem" },
+        { "slug": "medium", "name": "Medium", "size": "1rem" },
+        { "slug": "large", "name": "Large", "size": "clamp(1.125rem, 1rem + 0.5vw, 1.375rem)" },
+        { "slug": "x-large", "name": "XL", "size": "clamp(1.75rem, 1.25rem + 2vw, 3rem)" },
+        { "slug": "xx-large", "name": "XXL", "size": "clamp(2.25rem, 1.5rem + 3.5vw, 4.75rem)" }
       ]
+    },
+    "custom": {
+      "border": {
+        "subtle": "#d7dddc",
+        "radius": "2px"
+      },
+      "focus": {
+        "color": "#075985",
+        "offset": "3px",
+        "width": "3px"
+      },
+      "media": {
+        "ratio": "4 / 3"
+      },
+      "shadow": {
+        "card": "0 18px 45px rgb(20 32 31 / 10%)"
+      }
     }
   },
   "styles": {
@@ -39,23 +72,51 @@
       "background": "var:preset|color|white",
       "text": "var:preset|color|ink"
     },
-    "spacing": { "blockGap": "1.5rem" },
+    "spacing": {
+      "blockGap": "1.5rem"
+    },
     "typography": {
       "fontFamily": "var:preset|font-family|sans",
-      "fontSize": "1rem",
+      "fontSize": "var:preset|font-size|medium",
       "lineHeight": "1.65"
     },
     "elements": {
       "button": {
-        "border": { "radius": "2px" },
-        "color": { "background": "var:preset|color|ink", "text": "var:preset|color|white" },
-        "spacing": { "padding": { "top": "0.8rem", "right": "1.25rem", "bottom": "0.8rem", "left": "1.25rem" } },
-        "typography": { "fontWeight": "650" }
+        "border": {
+          "radius": "var:custom|border|radius"
+        },
+        "color": {
+          "background": "var:preset|color|ink",
+          "text": "var:preset|color|white"
+        },
+        "spacing": {
+          "padding": {
+            "top": "0.8rem",
+            "right": "1.25rem",
+            "bottom": "0.8rem",
+            "left": "1.25rem"
+          }
+        },
+        "typography": {
+          "fontWeight": "650",
+          "lineHeight": "1.2"
+        }
       },
       "heading": {
-        "typography": { "fontFamily": "var:preset|font-family|display", "fontWeight": "500", "lineHeight": "1.12" }
+        "typography": {
+          "fontFamily": "var:preset|font-family|display",
+          "fontWeight": "500",
+          "lineHeight": "1.12"
+        }
       },
-      "link": { "color": { "text": "var:preset|color|ink" } }
+      "link": {
+        "color": {
+          "text": "var:preset|color|ink"
+        },
+        "typography": {
+          "textDecoration": "underline"
+        }
+      }
     }
   },
   "templateParts": [
@@ -63,4 +124,3 @@
     { "name": "footer", "title": "Footer", "area": "footer" }
   ]
 }
-

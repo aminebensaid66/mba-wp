@@ -4,34 +4,58 @@ WordPress website for MBA Menuiseries Belhaj Ali, built as a maintainable produc
 
 ## Architecture
 
-- `wp-content/themes/mba-menuiseries`: custom native block theme
-- `wp-content/plugins/mba-site-core`: products, projects, FAQs, testimonials, partners, taxonomies, and global company settings
-- `PROJECT.md`: authoritative functional specification
-- `MBA_MENUISERIES_WEBSITE_SPEC.md`: market research and business requirements
-- `AI_DEVELOPMENT_PROMPT.md`: agent implementation workflow
+- `wp-content/themes/mba-menuiseries`: custom native block theme; presentation only.
+- `wp-content/plugins/mba-site-core`: durable products, projects, FAQs, testimonials, partners, taxonomies, metadata, and global business settings.
+- WordPress Media Library: owner-managed original photographs and documents, persisted in the Docker `wordpress_data` volume locally.
+- `PROJECT.md`: authoritative functional specification.
 
-Business content is stored independently of the theme. The owner can replace photos, edit product details, publish projects, and change contact information from WordPress without modifying templates.
+Changing or deactivating the theme must not delete business content. Products, projects, relationships, settings, and Media Library records belong to WordPress/the site plugin, not theme templates.
 
-## Local setup
+## Local requirements
 
-Requirements: Docker Desktop and Docker Compose.
+- Docker Desktop or Docker Engine with Docker Compose v2.
+- Ports: `8080` by default (change `WORDPRESS_PORT` in `.env` if needed).
+- No host PHP, Composer, Node.js, or database installation is required for issue #1.
 
-```bash
-cp .env.example .env
-docker compose up -d
-```
+The checked local stack is defined in `.env.example`: WordPress 6.8.2 on PHP 8.3, MariaDB 11.4.5, and WP-CLI 2.12.0. Production versions must be reviewed separately before launch.
 
-Open <http://localhost:8080> and complete the WordPress installation. Then activate:
+## One-command setup
 
-1. **MBA Site Core** plugin
-2. **MBA Menuiseries** theme
-
-Optional WP-CLI usage:
+From a fresh checkout:
 
 ```bash
-docker compose --profile tools run --rm cli wp plugin activate mba-site-core
-docker compose --profile tools run --rm cli wp theme activate mba-menuiseries
+./bin/setup.sh
 ```
+
+The script creates an ignored `.env` from `.env.example`, validates Compose, starts MariaDB/WordPress, installs WordPress when necessary, and activates **MBA Site Core** and **MBA Menuiseries**. Open <http://localhost:8080> unless you changed `WP_SITE_URL`/`WORDPRESS_PORT`.
+
+The values in `.env.example` are local placeholders, not production credentials. Keep real credentials in the ignored `.env` or deployment secret store.
+
+### Verify the fresh installation and persistence
+
+```bash
+./bin/smoke-wordpress.sh
+```
+
+The smoke test confirms plugin/theme activation, creates a published product plus a generated PNG attachment, restarts the database and WordPress containers, confirms both records persist, and fails if the WordPress debug log contains PHP warnings/notices/deprecations/fatal errors.
+
+### Reset local state
+
+```bash
+./bin/reset.sh
+# non-interactive disposable environments only:
+./bin/reset.sh --yes
+```
+
+Reset removes the project containers and named database/media volumes and deletes only the ignored local `.env`. It never deletes repository source files.
+
+## Persistence and directory ownership
+
+- `database_data` persists MariaDB data across normal `docker compose down`/restart operations.
+- `wordpress_data` persists the WordPress installation and `wp-content/uploads` media.
+- The theme and `mba-site-core` plugin are bind-mounted **read-only** from this repository; edit them on the host, not in wp-admin.
+- WordPress/Apache owns generated WordPress files and uploads inside the named volume. WP-CLI runs as UID/GID `33:33` to match the official WordPress image.
+- `./bin/reset.sh` intentionally deletes the named volumes; ordinary restarts do not.
 
 ## Content editing
 
@@ -49,12 +73,9 @@ Never add client claims, certifications, warranties, reviews, or technical value
 
 ```bash
 docker compose up -d
+docker compose ps
 docker compose logs -f wordpress
-docker compose down
+docker compose --profile tools run --rm cli wp --info
 docker compose config --quiet
+docker compose down
 ```
-
-## Status
-
-This first commit provides the development environment, editable content foundation, and block-theme shell. Feature delivery is tracked through GitHub issues.
-
