@@ -149,4 +149,7 @@ $GLOBALS['mba_product_test_options']['mba_site_settings'] = $settings;
 '' === mba_core_whatsapp_url() || $fail( 'Missing WhatsApp must not invent a number.' );
 '' === mba_core_setting( 'mba_quote_response_time' ) || $fail( 'Missing response time must not invent a promise.' );
 '' === mba_core_render_company_block( array( 'key' => 'unknown' ) ) || $fail( 'Unknown company block must render nothing.' );
+foreach ( array( 'mba_homepage_hero_heading', 'mba_homepage_value_proposition', 'mba_homepage_trust_highlights', 'mba_homepage_process', 'mba_homepage_hero_image_id', 'mba_homepage_intro_image_id' ) as $key ) {
+	isset( mba_core_settings_fields()[ $key ] ) || $fail( "Missing homepage setting {$key}." );
+}
 echo "Company settings assertions passed.\n";
