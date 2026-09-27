@@ -40,6 +40,17 @@ function mba_core_settings_fields(): array {
 		'mba_quote_cta_label' => array( __( 'Quote CTA label', 'mba-site-core' ), 'text', '' ),
 		'mba_contact_cta_label' => array( __( 'Contact CTA label', 'mba-site-core' ), 'text', '' ),
 		'mba_partner_disclaimer' => array( __( 'Partner/certification disclaimer', 'mba-site-core' ), 'textarea', '' ),
+		'mba_homepage_hero_heading' => array( __( 'Homepage hero heading', 'mba-site-core' ), 'text', __( 'One clear heading; leave blank to use the page title.', 'mba-site-core' ) ),
+		'mba_homepage_value_proposition' => array( __( 'Homepage value proposition', 'mba-site-core' ), 'textarea', '' ),
+		'mba_homepage_trust_highlights' => array( __( 'Homepage trust highlights', 'mba-site-core' ), 'textarea', __( 'One confirmed highlight per line; leave blank to hide this section.', 'mba-site-core' ) ),
+		'mba_homepage_reasons' => array( __( 'Homepage reasons to choose MBA', 'mba-site-core' ), 'textarea', __( 'One confirmed reason per line; leave blank to hide this section.', 'mba-site-core' ) ),
+		'mba_homepage_process' => array( __( 'Homepage project process', 'mba-site-core' ), 'textarea', __( 'One confirmed step per line; leave blank to hide this section.', 'mba-site-core' ) ),
+		'mba_homepage_materials' => array( __( 'Homepage materials and finishes', 'mba-site-core' ), 'textarea', '' ),
+		'mba_homepage_final_cta' => array( __( 'Homepage final CTA text', 'mba-site-core' ), 'textarea', '' ),
+		'mba_homepage_hero_image_id' => array( __( 'Homepage hero image', 'mba-site-core' ), 'image', '' ),
+		'mba_homepage_intro_image_id' => array( __( 'Homepage introduction image', 'mba-site-core' ), 'image', '' ),
+		'mba_homepage_process_image_id' => array( __( 'Homepage process image', 'mba-site-core' ), 'image', '' ),
+		'mba_homepage_materials_image_id' => array( __( 'Homepage materials image', 'mba-site-core' ), 'image', '' ),
 	);
 	$result = array();
 	foreach ( $fields as $key => $field ) {

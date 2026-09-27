@@ -255,6 +255,123 @@ body.admin-bar {
 	background: var(--wp--preset--color--mist);
 }
 
+/* stylelint-disable no-descending-specificity */
+.mba-homepage {
+	min-width: 0;
+}
+
+.mba-home-hero {
+	position: relative;
+	min-height: clamp(30rem, 70vh, 48rem);
+	display: grid;
+	align-items: center;
+	background: var(--wp--preset--color--ink);
+	color: var(--wp--preset--color--white);
+	overflow: hidden;
+}
+
+.mba-home-hero__media {
+	position: absolute;
+	inset: 0;
+	opacity: 0.38;
+}
+
+.mba-home-hero__media img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.mba-home-hero__content {
+	position: relative;
+	max-width: 58rem;
+	margin-inline: auto;
+	width: 100%;
+	padding: clamp(2rem, 8vw, 6rem) var(--mba-page-gutter);
+}
+
+.mba-home-hero h1 {
+	max-width: 14ch;
+	font-size: clamp(2.5rem, 7vw, 5.5rem);
+	margin-block: 0.5rem 1rem;
+}
+
+.mba-lede {
+	max-width: 52ch;
+	font-size: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+.mba-home-cards {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--30);
+}
+
+.mba-home-cards .mba-card {
+	min-width: 0;
+}
+
+.mba-home-cards .mba-card img {
+	display: block;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
+.mba-home-cards .mba-card__body h3,
+.mba-home-cards .mba-card__body p {
+	margin-inline: 0;
+}
+
+.mba-home-list ul,
+.mba-home-list ol {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 1rem 2rem;
+	padding-left: 1.5rem;
+}
+
+.mba-home-split {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: clamp(2rem, 5vw, 5rem);
+	align-items: center;
+}
+
+.mba-home-section-image {
+	width: 100%;
+	max-height: 28rem;
+	object-fit: cover;
+	aspect-ratio: 4 / 3;
+}
+
+.mba-home-final-cta {
+	background: var(--wp--preset--color--mist);
+	text-align: center;
+}
+
+.mba-home-final-cta .mba-button-row {
+	justify-content: center;
+}
+
+@media (width < 768px) {
+	.mba-home-cards,
+	.mba-home-split {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.mba-home-list ul,
+	.mba-home-list ol {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (width < 430px) {
+	.mba-home-list ul,
+	.mba-home-list ol {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 .mba-grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);

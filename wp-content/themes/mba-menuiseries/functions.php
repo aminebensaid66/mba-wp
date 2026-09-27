@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/includes/navigation.php';
+require_once __DIR__ . '/includes/homepage.php';
 
 /**
  * Theme features.
