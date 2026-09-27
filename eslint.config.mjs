@@ -16,6 +16,12 @@ export default [
     }
   },
   {
+    files: ['wp-content/themes/mba-menuiseries/assets/js/*.js'],
+    languageOptions: {
+      globals: { document: 'readonly', window: 'readonly', ResizeObserver: 'readonly' }
+    }
+  },
+  {
     files: ['wp-content/plugins/mba-site-core/assets/js/*.js'],
     languageOptions: {
       globals: {
