@@ -361,6 +361,83 @@ body.admin-bar {
 	object-fit: cover;
 }
 
+.mba-archive-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 1rem;
+	margin-block: 2rem;
+	padding: 1rem;
+	background: var(--wp--preset--color--mist);
+}
+
+.mba-archive-filters div {
+	min-width: min(16rem, 100%);
+}
+
+.mba-archive-filters label {
+	display: block;
+	font-weight: 650;
+	margin-bottom: 0.35rem;
+}
+
+.mba-archive-filters select {
+	min-height: 44px;
+	min-width: 100%;
+	padding: 0.5rem;
+}
+
+.mba-filter-reset {
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+}
+
+.mba-product-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--30);
+}
+
+.mba-product-card h2 {
+	font-size: 1.35rem;
+}
+
+.mba-card__meta {
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.mba-pagination {
+	margin-top: 2rem;
+}
+
+.mba-pagination .page-numbers {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	list-style: none;
+	padding: 0;
+}
+
+.mba-pagination a,
+.mba-pagination span {
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+	border: 1px solid var(--mba-border);
+	}
+
+.mba-empty-state {
+	padding: 2rem;
+	border: 1px dashed var(--mba-border);
+	text-align: center;
+}
+
 .mba-home-final-cta .mba-button-row {
 	justify-content: center;
 }
@@ -368,7 +445,8 @@ body.admin-bar {
 @media (width < 768px) {
 	.mba-home-cards,
 	.mba-home-split,
-	.mba-company-gallery {
+	.mba-company-gallery,
+	.mba-product-grid {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
