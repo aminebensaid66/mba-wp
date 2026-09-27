@@ -23,7 +23,8 @@ export default [
         jQuery: 'readonly',
         wp: 'readonly',
         mbaProductAdmin: 'readonly',
-        mbaProjectAdmin: 'readonly'
+        mbaProjectAdmin: 'readonly',
+        mbaEntryAdmin: 'readonly'
       }
     }
   }

@@ -48,9 +48,16 @@ function get_post_mime_type( $id ) {
 function current_user_can( $capability, $post_id ) {
 	return 'edit_post' === $capability && 23 === $post_id;
 }
+function esc_url_raw( $value, $protocols ) {
+	return trim( $value );
+}
+function wp_parse_url( $value, $component ) {
+	return parse_url( $value, $component );
+}
 
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/product-meta.php';
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/project-fields.php';
+require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/reusable-content.php';
 
 $fail = static function ( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
@@ -92,3 +99,15 @@ foreach ( array( 'mba_location_city', 'mba_location_region', 'mba_completion_dat
 }
 ! isset( $GLOBALS['mba_product_test_meta']['mba_project']['mba_street_address'] ) || $fail( 'Project fields must not request a private street address.' );
 echo "Project metadata assertions passed.\n";
+
+0 === mba_core_sanitize_rating( 6 ) || $fail( 'Out-of-range ratings must be rejected.' );
+0 === mba_core_sanitize_rating( 1.5 ) || $fail( 'Fractional ratings must be rejected.' );
+5 === mba_core_sanitize_rating( '5' ) || $fail( 'A supplied valid rating must be accepted.' );
+'' === mba_core_sanitize_partner_url( 'javascript:alert(1)' ) || $fail( 'Unsafe partner URL scheme must be rejected.' );
+'https://example.com' === mba_core_sanitize_partner_url( 'https://example.com' ) || $fail( 'HTTPS partner links must be accepted.' );
+0 === mba_core_sanitize_image_id( 12 ) || $fail( 'Partner logos must reject PDF attachments.' );
+mba_core_register_reusable_meta();
+foreach ( array( 'mba_faq', 'mba_testimonial', 'mba_partner' ) as $type ) {
+	isset( $GLOBALS['mba_product_test_meta'][ $type ]['mba_display_order'] ) || $fail( "Missing {$type} ordering." );
+}
+echo "Reusable content metadata assertions passed.\n";
