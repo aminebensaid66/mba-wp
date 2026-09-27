@@ -86,3 +86,7 @@ Open `/produits/` and verify the category and application filters submit normal 
 ## Product detail verification (issue #13)
 
 Open a published Product and verify the page renders its cover, short description, optional benefits/configurations/materials/glazing/colors/applications/maintenance, labeled verified performance rows, responsive gallery links, and related FAQs/projects/products only when populated. Gallery links must preserve Media Library captions/alt text and expose full-size targets for a lightbox. The technical document must show a PDF link with `application/pdf` and file size when the local file exists. The quote URL must include the current `product_id` and `product_slug`; related products must exclude the current product. Empty metadata must not leave blank headings or placeholder claims.
+
+## Projects archive verification (issue #14)
+
+Open `/realisations/` and submit the project type, general location, and installed-product filters as normal GET parameters (`type_projet`, `lieu`, and `produit`). Verify selected values and pagination survive reload, cards show cover/name/general location/year/installed product names, and no street address is printed. Missing covers still leave usable cards; image crops stay consistent through CSS without modifying originals. Empty results provide reset and quote links and announce their status.

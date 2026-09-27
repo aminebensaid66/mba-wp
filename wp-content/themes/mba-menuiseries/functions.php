@@ -14,6 +14,7 @@ require_once __DIR__ . '/includes/homepage.php';
 require_once __DIR__ . '/includes/company-page.php';
 require_once __DIR__ . '/includes/product-archive.php';
 require_once __DIR__ . '/includes/product-detail.php';
+require_once __DIR__ . '/includes/project-archive.php';
 
 /**
  * Theme features.
