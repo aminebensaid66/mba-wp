@@ -15,6 +15,7 @@ require_once __DIR__ . '/includes/company-page.php';
 require_once __DIR__ . '/includes/product-archive.php';
 require_once __DIR__ . '/includes/product-detail.php';
 require_once __DIR__ . '/includes/project-archive.php';
+require_once __DIR__ . '/includes/project-detail.php';
 
 /**
  * Theme features.
@@ -38,5 +39,8 @@ function mba_theme_enqueue_assets(): void {
 		array(),
 		file_exists( $path ) ? (string) filemtime( $path ) : '0.1.0'
 	);
+	if ( is_singular( 'mba_project' ) ) {
+		wp_enqueue_script( 'mba-project-gallery', get_theme_file_uri( 'assets/js/project-gallery.js' ), array(), '0.1.0', true );
+	}
 }
 add_action( 'wp_enqueue_scripts', 'mba_theme_enqueue_assets' );
