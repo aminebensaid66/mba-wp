@@ -24,7 +24,9 @@
       "@lint:php",
       "@phpcs",
       "@phpstan",
+      "@test:theme",
       "@test:lint-failure"
-    ]
+    ],
+    "test:theme": "@php tests/theme/theme-foundation.php"
   }
 }
