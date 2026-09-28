@@ -175,6 +175,24 @@ function mba_core_quote_remove_uploads( array $uploads ): void {
 	}
 }
 
+/** Delete a lead's private attachments only when the file remains in the private lead directory. */
+function mba_core_quote_delete_lead_uploads( int $lead_id ): void {
+	if ( 'mba_quote_lead' !== get_post_type( $lead_id ) ) {
+		return; }
+	$uploads = get_post_meta( $lead_id, '_mba_quote_uploads', true );
+	$base = realpath( mba_core_quote_private_dir() );
+	if ( ! $base || ! is_array( $uploads ) ) {
+		return; }
+	foreach ( $uploads as $upload ) {
+		if ( empty( $upload['path'] ) || ! is_string( $upload['path'] ) ) {
+			continue; }
+		$path = realpath( $upload['path'] );
+		if ( $path && str_starts_with( $path, $base . DIRECTORY_SEPARATOR ) && is_file( $path ) ) {
+			wp_delete_file( $path ); }
+	}
+}
+add_action( 'before_delete_post', 'mba_core_quote_delete_lead_uploads' );
+
 function mba_core_quote_is_spam( string $honeypot ): bool {
 	return '' !== trim( $honeypot );
 }

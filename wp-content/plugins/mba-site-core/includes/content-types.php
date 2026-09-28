@@ -153,7 +153,7 @@ function mba_core_register_content_types(): void {
 			'has_archive' => false,
 			'rewrite' => false,
 			'map_meta_cap' => true,
-			'capability_type' => 'post',
+			'capability_type' => array( 'mba_lead', 'mba_leads' ),
 			'menu_icon' => 'dashicons-email-alt',
 			'menu_position' => 25,
 			'supports' => array( 'title' ),
@@ -172,7 +172,7 @@ function mba_core_register_content_types(): void {
 			'has_archive' => false,
 			'rewrite' => false,
 			'map_meta_cap' => true,
-			'capability_type' => 'post',
+			'capability_type' => array( 'mba_lead', 'mba_leads' ),
 			'menu_icon' => 'dashicons-email',
 			'menu_position' => 26,
 			'supports' => array( 'title' ),
@@ -273,4 +273,34 @@ function mba_core_register_content_types(): void {
 		)
 	);
 }
+
+/** Grant private enquiry access to Administrators only; Editors do not receive lead capabilities. */
+function mba_core_install_lead_caps(): void {
+	$role = get_role( 'administrator' );
+	if ( ! $role ) {
+		return; }
+	foreach ( array(
+		'edit_mba_leads',
+		'edit_others_mba_leads',
+		'publish_mba_leads',
+		'read_private_mba_leads',
+		'delete_mba_leads',
+		'delete_private_mba_leads',
+		'delete_published_mba_leads',
+		'delete_others_mba_leads',
+		'edit_private_mba_leads',
+		'edit_published_mba_leads',
+	) as $capability ) {
+		$role->add_cap( $capability );
+	}
+	update_option( 'mba_lead_caps_version', '1', false );
+}
+
+/** Upgrade lead capabilities on existing installations after the plugin update. */
+function mba_core_upgrade_lead_caps(): void {
+	if ( '1' !== get_option( 'mba_lead_caps_version' ) ) {
+		mba_core_install_lead_caps();
+	}
+}
+add_action( 'init', 'mba_core_upgrade_lead_caps' );
 add_action( 'init', 'mba_core_register_content_types' );
