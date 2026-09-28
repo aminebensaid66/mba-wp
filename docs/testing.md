@@ -45,6 +45,10 @@ The automated WebKit project is a Safari-engine check, not a run of Apple's Safa
 
 [`docs/owner-guide.md`](owner-guide.md) follows the current wp-admin menus and field labels for MBA Settings, Products, Projects, FAQs, Testimonials, Partners, Posts, Pages, and the Media Library. The training checklist exercises these flows on staging or draft content; WordPress revisions cover post text, while host backups remain necessary for custom fields, relationships, media, and settings recovery.
 
+## Production release evidence (issue #30)
+
+[`docs/production-launch.md`](production-launch.md) maps every `PROJECT.md` Definition of Done item to a required owner, result, and evidence record. It is a runbook, not proof that production is configured or approval to launch; real DNS, SMTP, access controls, protected uploads, backups/restore, monitoring, indexing, Search Console, and MBA sign-off must be recorded by their owners.
+
 Runtime verification remains `./bin/smoke-wordpress.sh` from issue #1.
 
 ## What is intentionally excluded
