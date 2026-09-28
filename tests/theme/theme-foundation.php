@@ -20,8 +20,8 @@ foreach ( array( '430px', '768px', '1024px', '1440px', 'prefers-reduced-motion',
 	false !== strpos( $css, $needle ) || $fail( "Missing CSS foundation: {$needle}" );
 }
 
-false !== strpos( $navigation, "add_action( 'wp_body_open', 'mba_theme_render_skip_link' )" ) || $fail( 'The shared templates need an early skip link.' );
-false !== strpos( $css, '.mba-skip-link:focus' ) && false !== strpos( $css, 'a:focus-visible' ) || $fail( 'The skip link and keyboard controls need visible focus styling.' );
+false === strpos( $navigation, 'mba_theme_render_skip_link' ) || $fail( 'Do not duplicate WordPress core’s built-in skip link.' );
+false !== strpos( $css, 'a:focus-visible' ) || $fail( 'Keyboard controls need visible focus styling.' );
 false !== strpos( $faq, '<details class="mba-faq-item"><summary>' ) || $fail( 'FAQ disclosure controls must expose native keyboard and screen-reader state.' );
 false !== strpos( $faq, 'aria-expanded="false"' ) && $fail( 'FAQ disclosure state must not contradict a visible answer.' );
 

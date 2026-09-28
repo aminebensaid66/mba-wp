@@ -35,7 +35,7 @@ foreach ( array( array( 'ink', 'white' ), array( 'aluminium', 'white' ), array( 
 $contrast( $palette['ink'], $palette['white'] ) >= 3 || $fail( 'The white focus outline must contrast with dark surfaces.' );
 $contrast( $palette['focus'], $palette['white'] ) >= 3 || $fail( 'The colored focus ring must contrast with light surfaces.' );
 
-foreach ( array( 'a:focus-visible', 'outline:', 'box-shadow: 0 0 0 6px var(--mba-focus)', 'prefers-reduced-motion', '.mba-skip-link:focus' ) as $needle ) {
+foreach ( array( 'a:focus-visible', 'outline:', 'box-shadow: 0 0 0 6px var(--mba-focus)', 'prefers-reduced-motion' ) as $needle ) {
 	false !== strpos( $css, $needle ) || $fail( "Missing accessible interaction style: {$needle}" );
 }
 
