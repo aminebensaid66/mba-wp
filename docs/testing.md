@@ -37,6 +37,10 @@ Install Node.js 22+, Docker Compose v2, and the browser binaries once with `npx 
 
 The automated WebKit project is a Safari-engine check, not a run of Apple's Safari application; branded Edge is installed in CI, while Chromium covers the open-source Chrome/Chromium engine locally. Manual release sign-off should still record the actual Safari and target-device/OS versions used. Production SMTP delivery, external email-provider outage monitoring, and real human/bot behavior remain deployment/manual checks; tests substitute mail in the isolated stack and never send real messages.
 
+## Local content examples and approved migrations (issue #28)
+
+`bin/seed-sample-content.sh` creates only synthetic draft posts and marked original SVG illustrations; the end-to-end suite asserts the sample records stay unpublished and their media/relationships are preserved. See [`docs/sample-content/README.md`](sample-content/README.md) before using it, and never run it on staging or production. Approved content intake and rights are tracked in [`docs/client-input-required.md`](client-input-required.md); migration steps for metadata, media, relationship IDs, slugs, dates, and redirects are in [`docs/content-migration.md`](content-migration.md).
+
 Runtime verification remains `./bin/smoke-wordpress.sh` from issue #1.
 
 ## What is intentionally excluded

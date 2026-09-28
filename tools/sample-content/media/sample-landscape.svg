@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Illustration fictive à remplacer</title>
+  <desc id="desc">Illustration géométrique neutre au format paysage, sans photographie de bâtiment réel.</desc>
+  <rect width="1200" height="800" fill="#e8edf0"/>
+  <path d="M0 570 250 350l190 160 230-260 530 390v160H0Z" fill="#c8d5db"/>
+  <rect x="370" y="140" width="450" height="460" fill="#fff" stroke="#526773" stroke-width="24"/>
+  <path d="M595 152v435M382 370h426" stroke="#526773" stroke-width="18"/>
+  <rect x="45" y="690" width="1110" height="64" rx="12" fill="#fff"/>
+  <text x="600" y="733" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#263943">VISUEL FICTIF — À REMPLACER</text>
+</svg>

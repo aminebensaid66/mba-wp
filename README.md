@@ -81,3 +81,5 @@ docker compose --profile tools run --rm cli wp --info
 docker compose config --quiet
 docker compose down
 ```
+
+For clearly labeled local sample drafts, follow [`docs/sample-content/README.md`](docs/sample-content/README.md). For approved-site imports, use [`docs/content-migration.md`](docs/content-migration.md) and [`docs/client-input-required.md`](docs/client-input-required.md). Never seed sample content on staging or production.

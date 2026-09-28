@@ -1,0 +1,4 @@
+services:
+  cli:
+    volumes:
+      - ./tools/sample-content:/var/www/html/wp-content/mba-sample-content:ro
