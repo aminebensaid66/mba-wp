@@ -61,6 +61,10 @@ compose --profile tools run --rm cli wp plugin activate mba-site-core
 compose --profile tools run --rm cli wp theme activate mba-menuiseries
 compose --profile tools run --rm cli wp rewrite structure '/%postname%/' --hard
 compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-e2e/prepare.php
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-sample-content/seed.php
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-e2e/mark-sample-edited.php
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-sample-content/seed.php
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-e2e/assert-samples.php
 
 npx playwright install chromium firefox webkit
 if [ "${E2E_INCLUDE_EDGE:-0}" = '1' ]; then
@@ -74,3 +78,6 @@ elif [ "$#" -gt 0 ]; then
 else
 	PLAYWRIGHT_BASE_URL=$site_url npx playwright test --project=chromium --project=firefox --project=webkit "$@"
 fi
+
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-sample-content/remove.php
+compose --profile tools run --rm cli wp eval-file /var/www/html/wp-content/mba-e2e/assert-samples-removed.php

@@ -83,6 +83,13 @@ test('critical routes render without browser or server errors and internal links
   expect(brokenResponses).toEqual([]);
 });
 
+test('unpublished sample catalogue records never appear in public archives', async ({ page }) => {
+  await page.goto('/produits/');
+  await expect(page.locator('main')).not.toContainText('Fenêtre fictive en aluminium');
+  await page.goto('/realisations/');
+  await expect(page.locator('main')).not.toContainText('Projet de démonstration');
+});
+
 test('critical templates fit all required viewport widths without horizontal overflow', async ({ page }) => {
   for (const width of responsiveWidths) {
     await page.setViewportSize({ width, height: 900 });
