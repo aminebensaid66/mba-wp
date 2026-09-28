@@ -40,6 +40,9 @@ foreach ( $expected as $type ) {
 	isset( $args['labels']['add_new_item'], $args['labels']['edit_item'], $args['labels']['all_items'] ) || $fail( "{$type} labels incomplete" );
 }
 
+$quote_lead = $GLOBALS['mba_test_post_types']['mba_quote_lead'] ?? array();
+false === ( $quote_lead['public'] ?? true ) && false === ( $quote_lead['publicly_queryable'] ?? true ) || $fail( 'Quote leads must remain private.' );
+
 $product = $GLOBALS['mba_test_post_types']['mba_product'];
 $project = $GLOBALS['mba_test_post_types']['mba_project'];
 true === $product['public'] && 'produits' === $product['has_archive'] || $fail( 'Product public archive mismatch.' );

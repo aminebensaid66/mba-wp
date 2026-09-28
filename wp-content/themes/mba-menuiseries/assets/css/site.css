@@ -615,6 +615,64 @@ body.admin-bar {
 	display: none;
 }
 
+.mba-quote-form {
+	max-width: 52rem;
+}
+
+.mba-quote-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--30);
+}
+
+.mba-quote-field {
+	display: grid;
+	gap: 0.5rem;
+	margin-block: 1rem;
+}
+
+.mba-quote-field input:not([type='checkbox'], [type='radio']),
+.mba-quote-field textarea,
+.mba-quote-field select {
+	width: 100%;
+	min-height: 44px;
+	padding: 0.65rem;
+	border: 1px solid var(--mba-border);
+	font: inherit;
+}
+
+.mba-quote-field input[type='checkbox'],
+.mba-quote-field input[type='radio'] {
+	min-width: 20px;
+	min-height: 20px;
+}
+
+.mba-quote-field fieldset,
+fieldset.mba-quote-field {
+	border: 1px solid var(--mba-border);
+	padding: 1rem;
+}
+
+.mba-quote-notice {
+	padding: 1rem;
+	border-inline-start: 4px solid var(--mba-focus);
+	background: var(--wp--preset--color--mist);
+}
+
+.mba-quote-honeypot {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+@media (width < 650px) {
+	.mba-quote-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 .mba-product-detail-section details {
 	border-top: 1px solid var(--mba-border);
 	padding: 1rem 0;

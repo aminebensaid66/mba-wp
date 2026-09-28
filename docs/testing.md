@@ -99,6 +99,10 @@ Open a published project with case-study fields and before/during/after media. V
 
 Open `/faq/` and category links. Verify questions and answers come from published FAQ entries, category selection is shareable, buttons expose `aria-expanded`/`aria-controls`, keyboard activation works, and all answers remain visible when JavaScript is disabled. Confirm no FAQ schema is emitted for unsupported or empty content.
 
+## Secure quote verification (issue #18)
+
+Submit `/devis/` with valid data and confirm one private Quote Lead is saved, the configured receiving address gets the notification and private attachments, and a supplied email receives an acknowledgement. Test invalid required fields, malformed optional email, email-required setting, oversized/wrong-MIME/too-many files, the honeypot, a repeated token, and mail failure. A mail failure must leave the private lead available in the admin and show an error rather than success. Download an uploaded file as an Editor and verify a logged-out visitor cannot request the same file. Product/project CTAs must retain validated source IDs; UTM values are only stored on consented submissions. Configure authenticated SMTP before production use; `wp_mail()` uses the site's configured mail transport.
+
 ## Blog verification (issue #16)
 
 Open `/conseils/`, a category archive, and a published article. Verify category links, nine-item pagination, cover/excerpt cards, readable article width, visible published/updated/author metadata, related articles, and the contextual quote CTA. Confirm article content remains editable through the native post editor.
