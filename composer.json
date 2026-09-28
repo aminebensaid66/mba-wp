@@ -27,10 +27,12 @@
       "@test:theme",
       "@test:content-types",
       "@test:products",
+      "@test:quotes",
       "@test:lint-failure"
     ],
     "test:theme": "@php tests/theme/theme-foundation.php",
     "test:content-types": "@php tests/php/content-types-test.php",
-    "test:products": "@php tests/php/product-fields-test.php"
+    "test:products": "@php tests/php/product-fields-test.php",
+    "test:quotes": "@php tests/php/quote-leads-test.php"
   }
 }

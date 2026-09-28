@@ -36,6 +36,7 @@ function mba_core_settings_fields(): array {
 		'mba_tiktok_url' => array( __( 'TikTok URL', 'mba-site-core' ), 'url', '' ),
 		'mba_youtube_url' => array( __( 'YouTube URL', 'mba-site-core' ), 'url', '' ),
 		'mba_quote_response_time' => array( __( 'Quote response time', 'mba-site-core' ), 'text', __( 'Enter only a response time confirmed by MBA; leave blank to omit the promise.', 'mba-site-core' ) ),
+		'mba_quote_require_email' => array( __( 'Require email for quote requests', 'mba-site-core' ), 'checkbox', __( 'Leave unchecked to allow phone-only enquiries.', 'mba-site-core' ) ),
 		'mba_footer_content' => array( __( 'Footer content', 'mba-site-core' ), 'textarea', '' ),
 		'mba_quote_cta_label' => array( __( 'Quote CTA label', 'mba-site-core' ), 'text', '' ),
 		'mba_contact_cta_label' => array( __( 'Contact CTA label', 'mba-site-core' ), 'text', '' ),
@@ -88,7 +89,7 @@ function mba_core_sanitize_phone( $value ): string {
  *
  * @param string $type  Field type.
  * @param mixed  $value Input.
- * @return string|int|array<int>
+ * @return string|int|bool|array<int>
  */
 function mba_core_validate_setting( string $type, $value ) {
 	if ( in_array( $type, array( 'image', 'favicon' ), true ) ) {
@@ -104,6 +105,9 @@ function mba_core_validate_setting( string $type, $value ) {
 	if ( 'gallery' === $type ) {
 		$values = is_array( $value ) ? $value : explode( ',', (string) $value );
 		return mba_core_sanitize_image_id_list( $values );
+	}
+	if ( 'checkbox' === $type ) {
+		return rest_sanitize_boolean( $value );
 	}
 	if ( ! is_string( $value ) ) {
 		return '';
@@ -147,7 +151,7 @@ function mba_core_sanitize_settings( $value ): array {
  * Public API: unknown/missing text returns empty; missing media returns zero.
  *
  * @param string $key Known key.
- * @return string|int
+ * @return string|int|bool
  */
 function mba_core_setting( string $key ) {
 	$fields = mba_core_settings_fields();
@@ -341,6 +345,8 @@ function mba_core_render_setting( array $args ): void {
 		echo '</div><button type="button" class="button mba-settings-gallery-choose">' . esc_html__( 'Choose gallery images', 'mba-site-core' ) . '</button></div>';
 	} elseif ( 'textarea' === $field['type'] ) {
 		printf( '<textarea class="large-text" rows="3" id="%1$s" name="%2$s">%3$s</textarea>', esc_attr( $key ), esc_attr( $name ), esc_textarea( (string) $value ) );
+	} elseif ( 'checkbox' === $field['type'] ) {
+		printf( '<input type="hidden" name="%1$s" value="0"><label><input type="checkbox" id="%2$s" name="%1$s" value="1"%3$s> %4$s</label>', esc_attr( $name ), esc_attr( $key ), checked( (bool) $value, true, false ), esc_html__( 'Enabled', 'mba-site-core' ) );
 	} else {
 		$type = in_array( $field['type'], array( 'url', 'map' ), true ) ? 'url' : ( 'phone' === $field['type'] ? 'tel' : $field['type'] );
 		printf( '<input class="regular-text" type="%1$s" id="%2$s" name="%3$s" value="%4$s">', esc_attr( $type ), esc_attr( $key ), esc_attr( $name ), esc_attr( (string) $value ) );

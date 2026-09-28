@@ -25,6 +25,7 @@ require_once MBA_CORE_PATH . 'includes/product-admin.php';
 require_once MBA_CORE_PATH . 'includes/project-fields.php';
 require_once MBA_CORE_PATH . 'includes/reusable-content.php';
 require_once MBA_CORE_PATH . 'includes/settings.php';
+require_once MBA_CORE_PATH . 'includes/quote-leads.php';
 
 /**
  * Register rewrite structures once before activation flushes them.
