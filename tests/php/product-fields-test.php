@@ -67,7 +67,10 @@ function sanitize_email( $value ) {
 	return $value;
 }
 function wp_get_attachment_metadata( $id ) {
-	return 11 === $id ? array( 'width' => 1600, 'height' => 1200 ) : array();
+	return 11 === $id ? array(
+		'width' => 1600,
+		'height' => 1200,
+	) : array();
 }
 function add_settings_error( $setting, $code, $message, $type ) {
 	$GLOBALS['mba_product_test_errors'][] = $code;
@@ -96,8 +99,27 @@ array( 22 ) === mba_core_sanitize_project_ids( array( 22, 23 ) ) || $fail( 'Proj
 array( 23 ) === mba_core_sanitize_product_ids( array( 23, 21 ) ) || $fail( 'Backlinks must contain only products.' );
 9999 === mba_core_sanitize_display_order( 20000 ) || $fail( 'Order must be bounded.' );
 0 === mba_core_sanitize_display_order( -4 ) || $fail( 'Negative order must become zero.' );
-array() === mba_core_sanitize_performance_details( array( array( 'label' => 'U-value', 'value' => '' ) ) ) || $fail( 'Incomplete performance claim must be rejected.' );
-array( array( 'label' => 'Silver', 'image_id' => 0 ) ) === mba_core_sanitize_colors_finishes( array( array( 'label' => 'Silver', 'image_id' => 12 ) ) ) || $fail( 'Non-image swatch must be rejected.' );
+array() === mba_core_sanitize_performance_details(
+	array(
+		array(
+			'label' => 'U-value',
+			'value' => '',
+		),
+	)
+) || $fail( 'Incomplete performance claim must be rejected.' );
+array(
+	array(
+		'label' => 'Silver',
+		'image_id' => 0,
+	),
+) === mba_core_sanitize_colors_finishes(
+	array(
+		array(
+			'label' => 'Silver',
+			'image_id' => 12,
+		),
+	)
+) || $fail( 'Non-image swatch must be rejected.' );
 false === mba_core_product_meta_auth( true, 'mba_gallery', 22 ) || $fail( 'Metadata auth must check the actual post.' );
 
 mba_core_register_product_meta();
@@ -137,7 +159,14 @@ echo "Reusable content metadata assertions passed.\n";
 '+21612345678' === mba_core_sanitize_phone( '+216 (12) 345-678' ) || $fail( 'International phone formatting must normalize safely.' );
 '' === mba_core_sanitize_phone( '12345678' ) || $fail( 'Phone country code must not be guessed.' );
 '' === mba_core_sanitize_phone( '+216call12345678' ) || $fail( 'Phone letters must not be silently removed.' );
-$settings = mba_core_sanitize_settings( array( 'mba_phone' => '+216 12 345 678', 'mba_email' => 'invalid', 'mba_maps_embed_url' => 'https://evil.example/maps/embed', 'unknown' => 'untrusted' ) );
+$settings = mba_core_sanitize_settings(
+	array(
+		'mba_phone' => '+216 12 345 678',
+		'mba_email' => 'invalid',
+		'mba_maps_embed_url' => 'https://evil.example/maps/embed',
+		'unknown' => 'untrusted',
+	)
+);
 '+21612345678' === $settings['mba_phone'] || $fail( 'Canonical phone missing from settings.' );
 '' === $settings['mba_email'] || $fail( 'Invalid email must be rejected.' );
 '' === $settings['mba_maps_embed_url'] || $fail( 'Unapproved embed source must be rejected.' );
@@ -147,6 +176,15 @@ $GLOBALS['mba_product_test_options']['mba_site_settings'] = $settings;
 '+216 12 345 678' === mba_core_phone_display() || $fail( 'Display phone must derive from canonical global value.' );
 'tel:+21612345678' === mba_core_phone_url() || $fail( 'Telephone link must use canonical global value.' );
 '' === mba_core_whatsapp_url() || $fail( 'Missing WhatsApp must not invent a number.' );
+$GLOBALS['mba_product_test_options']['mba_site_settings'] = mba_core_sanitize_settings(
+	array(
+		'mba_phone' => '+216 12 345 678',
+		'mba_whatsapp' => '+216 98 765 432',
+		'mba_whatsapp_message' => 'Bonjour MBA',
+	)
+);
+'https://wa.me/21698765432?text=Bonjour%20MBA' === mba_core_whatsapp_url() || $fail( 'WhatsApp URL must use the international number and encoded editable draft.' );
+'https://wa.me/21698765432?text=Bonjour%20MBA%0A%0AProduit%20%3A%20Fen%C3%AAtre' === mba_core_whatsapp_url( 'Produit : Fenêtre' ) || $fail( 'Contextual product/project text must be appended and URL encoded.' );
 '' === mba_core_setting( 'mba_quote_response_time' ) || $fail( 'Missing response time must not invent a promise.' );
 true === mba_core_validate_setting( 'checkbox', '1' ) || $fail( 'Quote email requirement setting must support an enabled value.' );
 false === mba_core_validate_setting( 'checkbox', '0' ) || $fail( 'Quote email requirement setting must support a disabled value.' );

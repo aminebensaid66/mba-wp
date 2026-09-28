@@ -48,5 +48,8 @@ function mba_theme_enqueue_assets(): void {
 	if ( is_page( 'faq' ) ) {
 		wp_enqueue_script( 'mba-faq', get_theme_file_uri( 'assets/js/faq.js' ), array(), '0.1.0', true );
 	}
+	if ( ( function_exists( 'mba_core_phone_url' ) && mba_core_phone_url() ) || ( function_exists( 'mba_core_whatsapp_url' ) && mba_core_whatsapp_url() ) ) {
+		wp_enqueue_script( 'mba-mobile-conversion', get_theme_file_uri( 'assets/js/mobile-conversion.js' ), array(), '0.1.0', true );
+	}
 }
 add_action( 'wp_enqueue_scripts', 'mba_theme_enqueue_assets' );

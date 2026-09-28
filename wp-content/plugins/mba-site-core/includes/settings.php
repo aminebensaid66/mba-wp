@@ -190,12 +190,14 @@ function mba_core_phone_url( string $key = 'mba_phone' ): string {
  *
  * @return string
  */
-function mba_core_whatsapp_url(): string {
+function mba_core_whatsapp_url( string $context = '' ): string {
 	$phone = mba_core_sanitize_phone( mba_core_setting( 'mba_whatsapp' ) );
 	if ( ! $phone ) {
 		return '';
 	}
 	$message = (string) mba_core_setting( 'mba_whatsapp_message' );
+	if ( $context ) {
+		$message = trim( $message . ( $message ? "\n\n" : '' ) . $context ); }
 	return 'https://wa.me/' . substr( $phone, 1 ) . ( $message ? '?text=' . rawurlencode( $message ) : '' );
 }
 

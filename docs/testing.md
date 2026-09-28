@@ -110,3 +110,7 @@ Open `/conseils/`, a category archive, and a published article. Verify category 
 ## Contact page and short form (issue #19)
 
 Open `/contact/` and verify only configured company details, opening hours, service areas, showroom visit guidance, and social links appear. Phone, email, and WhatsApp actions must use their matching link schemes. The directions link must work before map consent; the Google Maps iframe must not exist until its explicit load button is activated. Submit with only a phone and then only an email, and verify success, invalid-input, notification-failure, and duplicate/spam states. Confirm enquiries are stored as private contact leads in wp-admin and that the message form requires privacy consent. With no optional business or social settings configured, their sections must be omitted.
+
+## Mobile conversion actions (issue #20)
+
+At widths below 768 px, configure each combination of phone and WhatsApp number and confirm the fixed action bar contains only configured actions, stays clear of the final page controls, and respects the device safe area. Confirm the call link uses the canonical international number. Set an editable WhatsApp draft, then open the action from a product and a project: the relevant public title should be appended to the prefilled message, which remains editable in WhatsApp. Inspect `mba:conversion-action` events and confirm they contain only `action` and the generic `contentType`, never a phone number, message, or title. At desktop width the bar is hidden; with no contact numbers it is omitted entirely.

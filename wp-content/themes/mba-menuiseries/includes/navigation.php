@@ -185,8 +185,60 @@ function mba_theme_render_site_footer(): string {
 			$html .= '<li><a href="' . esc_url( $url ) . '" rel="me">' . esc_html( $label ) . '</a></li>';
 		}
 	}
-	return $html . '</ul></div></div>';
+	$html .= '</ul></div></div>';
+	return $html . mba_theme_render_mobile_conversion_actions();
 }
+
+/**
+ * Render compact mobile call and WhatsApp actions from validated settings.
+ *
+ * @return string
+ */
+function mba_theme_render_mobile_conversion_actions(): string {
+	$phone = function_exists( 'mba_core_phone_url' ) ? mba_core_phone_url() : '';
+	$whatsapp = function_exists( 'mba_core_whatsapp_url' ) ? mba_core_whatsapp_url( mba_theme_conversion_context() ) : '';
+	if ( ! $phone && ! $whatsapp ) {
+		return '';
+	}
+	$name = (string) mba_theme_setting( 'mba_legal_name' );
+	$name = $name ? $name : get_bloginfo( 'name' );
+	$type = is_singular( 'mba_product' ) ? 'product' : ( is_singular( 'mba_project' ) ? 'project' : 'general' );
+	$count = ( $phone ? 1 : 0 ) + ( $whatsapp ? 1 : 0 );
+	$html = '<nav class="mba-mobile-conversion' . ( 1 === $count ? ' mba-mobile-conversion--single' : '' ) . '" aria-label="' . esc_attr__( 'Actions de contact rapides', 'mba-menuiseries' ) . '">';
+	if ( $phone ) {
+		$html .= '<a class="mba-mobile-conversion__action" href="' . esc_url( $phone ) . '" data-mba-conversion="call" data-mba-content-type="' . esc_attr( $type ) . '">' . esc_html( sprintf( __( 'Appeler %s', 'mba-menuiseries' ), $name ) ) . '</a>';
+	}
+	if ( $whatsapp ) {
+		$html .= '<a class="mba-mobile-conversion__action mba-mobile-conversion__action--whatsapp" href="' . esc_url( $whatsapp ) . '" target="_blank" rel="noopener noreferrer" data-mba-conversion="whatsapp" data-mba-content-type="' . esc_attr( $type ) . '">' . esc_html( sprintf( __( 'Écrire à %s sur WhatsApp', 'mba-menuiseries' ), $name ) ) . '</a>';
+	}
+	return $html . '</nav>';
+}
+
+/**
+ * Add public product/project context to the editable WhatsApp draft.
+ *
+ * @return string
+ */
+function mba_theme_conversion_context(): string {
+	if ( ! is_singular( array( 'mba_product', 'mba_project' ) ) ) {
+		return '';
+	}
+	$post = get_queried_object();
+	if ( ! $post instanceof WP_Post ) {
+		return '';
+	}
+	$prefix = 'mba_product' === $post->post_type ? __( 'Bonjour, je vous contacte au sujet du produit :', 'mba-menuiseries' ) : __( 'Bonjour, je vous contacte au sujet de cette réalisation :', 'mba-menuiseries' );
+	return $prefix . ' ' . get_the_title( $post );
+}
+
+/** Add bottom room only when a mobile action bar is configured. */
+function mba_theme_mobile_conversion_body_class( array $classes ): array {
+	if ( ( function_exists( 'mba_core_phone_url' ) && mba_core_phone_url() ) || ( function_exists( 'mba_core_whatsapp_url' ) && mba_core_whatsapp_url() ) ) {
+		$classes[] = 'has-mba-mobile-conversion';
+	}
+	return $classes;
+}
+add_filter( 'body_class', 'mba_theme_mobile_conversion_body_class' );
 
 /**
  * Render hierarchical context with the current page announced accessibly.
