@@ -14,12 +14,13 @@ function mba_theme_register_product_archive_block(): void {
 }
 add_action( 'init', 'mba_theme_register_product_archive_block' );
 
-function mba_product_archive_card( WP_Post $product ): string {
+function mba_product_archive_card( WP_Post $product, bool $prioritize_image = false ): string {
 	$image = get_the_post_thumbnail(
 		$product,
 		'mba-card',
 		array(
-			'loading' => 'lazy',
+			'loading' => $prioritize_image ? 'eager' : 'lazy',
+			'fetchpriority' => $prioritize_image ? 'high' : 'auto',
 			'decoding' => 'async',
 			'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
 		)
@@ -108,7 +109,7 @@ function mba_theme_render_product_archive(): string {
 		$html .= '<div class="mba-product-grid">';
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$html .= mba_product_archive_card( get_post() );
+			$html .= mba_product_archive_card( get_post(), 0 === $query->current_post );
 		}
 		$html .= '</div>';
 		$pagination = paginate_links(
