@@ -45,6 +45,8 @@ function mba_core_settings_fields(): array {
 		'mba_seo_description' => array( __( 'Default SEO description', 'mba-site-core' ), 'textarea', __( 'Used as the homepage description and general fallback.', 'mba-site-core' ) ),
 		'mba_seo_image_id' => array( __( 'Default social share image', 'mba-site-core' ), 'image', __( 'Used when a page has no featured image.', 'mba-site-core' ) ),
 		'mba_seo_redirects' => array( __( 'Permanent redirects', 'mba-site-core' ), 'redirects', __( 'One internal path per line: /old-path/ => /new-path/. Targets must stay on this site.', 'mba-site-core' ) ),
+		'mba_analytics_production_id' => array( __( 'Production GA4 measurement ID', 'mba-site-core' ), 'analytics_id', __( 'Optional Google Analytics ID in the format G-XXXXXXXXXX. Loaded only after analytics consent. Disable GA4 automatic outbound-click and file-download measurement.', 'mba-site-core' ) ),
+		'mba_analytics_staging_id' => array( __( 'Staging GA4 measurement ID', 'mba-site-core' ), 'analytics_id', __( 'Optional separate GA4 ID for staging. Local/development traffic is always excluded.', 'mba-site-core' ) ),
 		'mba_partner_disclaimer' => array( __( 'Partner/certification disclaimer', 'mba-site-core' ), 'textarea', '' ),
 		'mba_homepage_hero_heading' => array( __( 'Homepage hero heading', 'mba-site-core' ), 'text', __( 'One clear heading; leave blank to use the page title.', 'mba-site-core' ) ),
 		'mba_homepage_value_proposition' => array( __( 'Homepage value proposition', 'mba-site-core' ), 'textarea', '' ),
@@ -125,6 +127,10 @@ function mba_core_validate_setting( string $type, $value ) {
 	}
 	if ( 'email' === $type ) {
 		return is_email( trim( $value ) ) ? sanitize_email( trim( $value ) ) : '';
+	}
+	if ( 'analytics_id' === $type ) {
+		$id = strtoupper( trim( $value ) );
+		return preg_match( '/^G-[A-Z0-9]{6,20}$/', $id ) ? $id : '';
 	}
 	if ( in_array( $type, array( 'url', 'map' ), true ) ) {
 		$url = mba_core_sanitize_partner_url( $value );
@@ -358,7 +364,7 @@ function mba_core_render_setting( array $args ): void {
 	} elseif ( 'checkbox' === $field['type'] ) {
 		printf( '<input type="hidden" name="%1$s" value="0"><label><input type="checkbox" id="%2$s" name="%1$s" value="1"%3$s> %4$s</label>', esc_attr( $name ), esc_attr( $key ), checked( (bool) $value, true, false ), esc_html__( 'Enabled', 'mba-site-core' ) );
 	} else {
-		$type = in_array( $field['type'], array( 'url', 'map' ), true ) ? 'url' : ( 'phone' === $field['type'] ? 'tel' : $field['type'] );
+		$type = in_array( $field['type'], array( 'url', 'map' ), true ) ? 'url' : ( 'phone' === $field['type'] ? 'tel' : ( 'analytics_id' === $field['type'] ? 'text' : $field['type'] ) );
 		printf( '<input class="regular-text" type="%1$s" id="%2$s" name="%3$s" value="%4$s">', esc_attr( $type ), esc_attr( $key ), esc_attr( $name ), esc_attr( (string) $value ) );
 	}
 	if ( $field['help'] ) {
