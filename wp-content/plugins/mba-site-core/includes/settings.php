@@ -41,6 +41,10 @@ function mba_core_settings_fields(): array {
 		'mba_footer_content' => array( __( 'Footer content', 'mba-site-core' ), 'textarea', '' ),
 		'mba_quote_cta_label' => array( __( 'Quote CTA label', 'mba-site-core' ), 'text', '' ),
 		'mba_contact_cta_label' => array( __( 'Contact CTA label', 'mba-site-core' ), 'text', '' ),
+		'mba_seo_title' => array( __( 'Default SEO title', 'mba-site-core' ), 'text', __( 'Used as the homepage title when no page-specific title is set.', 'mba-site-core' ) ),
+		'mba_seo_description' => array( __( 'Default SEO description', 'mba-site-core' ), 'textarea', __( 'Used as the homepage description and general fallback.', 'mba-site-core' ) ),
+		'mba_seo_image_id' => array( __( 'Default social share image', 'mba-site-core' ), 'image', __( 'Used when a page has no featured image.', 'mba-site-core' ) ),
+		'mba_seo_redirects' => array( __( 'Permanent redirects', 'mba-site-core' ), 'redirects', __( 'One internal path per line: /old-path/ => /new-path/. Targets must stay on this site.', 'mba-site-core' ) ),
 		'mba_partner_disclaimer' => array( __( 'Partner/certification disclaimer', 'mba-site-core' ), 'textarea', '' ),
 		'mba_homepage_hero_heading' => array( __( 'Homepage hero heading', 'mba-site-core' ), 'text', __( 'One clear heading; leave blank to use the page title.', 'mba-site-core' ) ),
 		'mba_homepage_value_proposition' => array( __( 'Homepage value proposition', 'mba-site-core' ), 'textarea', '' ),
@@ -93,6 +97,9 @@ function mba_core_sanitize_phone( $value ): string {
  * @return string|int|bool|array<int>
  */
 function mba_core_validate_setting( string $type, $value ) {
+	if ( 'redirects' === $type ) {
+		return is_string( $value ) && function_exists( 'mba_core_seo_sanitize_redirects' ) ? mba_core_seo_sanitize_redirects( $value ) : '';
+	}
 	if ( in_array( $type, array( 'image', 'favicon' ), true ) ) {
 		$id = mba_core_sanitize_image_id( $value );
 		if ( 'favicon' === $type && $id ) {
@@ -346,7 +353,7 @@ function mba_core_render_setting( array $args ): void {
 			}
 		}
 		echo '</div><button type="button" class="button mba-settings-gallery-choose">' . esc_html__( 'Choose gallery images', 'mba-site-core' ) . '</button></div>';
-	} elseif ( 'textarea' === $field['type'] ) {
+	} elseif ( in_array( $field['type'], array( 'textarea', 'redirects' ), true ) ) {
 		printf( '<textarea class="large-text" rows="3" id="%1$s" name="%2$s">%3$s</textarea>', esc_attr( $key ), esc_attr( $name ), esc_textarea( (string) $value ) );
 	} elseif ( 'checkbox' === $field['type'] ) {
 		printf( '<input type="hidden" name="%1$s" value="0"><label><input type="checkbox" id="%2$s" name="%1$s" value="1"%3$s> %4$s</label>', esc_attr( $name ), esc_attr( $key ), checked( (bool) $value, true, false ), esc_html__( 'Enabled', 'mba-site-core' ) );
