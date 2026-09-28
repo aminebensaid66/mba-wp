@@ -30,6 +30,7 @@ function mba_core_settings_fields(): array {
 		'mba_service_areas' => array( __( 'Service areas', 'mba-site-core' ), 'textarea', __( 'One general service area per line.', 'mba-site-core' ) ),
 		'mba_maps_url' => array( __( 'Map directions URL', 'mba-site-core' ), 'url', '' ),
 		'mba_maps_embed_url' => array( __( 'Google Maps embed URL', 'mba-site-core' ), 'map', __( 'HTTPS URL beginning https://www.google.com/maps/embed; do not paste iframe HTML.', 'mba-site-core' ) ),
+		'mba_showroom_guidance' => array( __( 'Workshop/showroom visit guidance', 'mba-site-core' ), 'textarea', __( 'Confirmed visit instructions, appointment requirements, and accessibility notes only.', 'mba-site-core' ) ),
 		'mba_facebook_url' => array( __( 'Facebook URL', 'mba-site-core' ), 'url', '' ),
 		'mba_instagram_url' => array( __( 'Instagram URL', 'mba-site-core' ), 'url', '' ),
 		'mba_linkedin_url' => array( __( 'LinkedIn URL', 'mba-site-core' ), 'url', '' ),

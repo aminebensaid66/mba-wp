@@ -667,6 +667,59 @@ fieldset.mba-quote-field {
 	clip-path: inset(50%);
 }
 
+.mba-contact-details,
+.mba-contact-social {
+	padding-inline-start: 1.25rem;
+}
+
+.mba-contact-details li {
+	margin-block: 0.5rem;
+}
+
+.mba-contact-form {
+	max-width: 48rem;
+}
+
+.mba-contact-field {
+	display: grid;
+	gap: 0.5rem;
+	margin-block: 1rem;
+}
+
+.mba-contact-field input:not([type='checkbox']),
+.mba-contact-field textarea {
+	width: 100%;
+	min-height: 44px;
+	padding: 0.65rem;
+	border: 1px solid var(--mba-border);
+	font: inherit;
+}
+
+.mba-contact-field input[type='checkbox'] {
+	min-width: 20px;
+	min-height: 20px;
+}
+
+.mba-contact-notice {
+	padding: 1rem;
+	border-inline-start: 4px solid var(--mba-focus);
+	background: var(--wp--preset--color--mist);
+}
+
+.mba-contact-honeypot {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.mba-consent-map iframe {
+	width: 100%;
+	min-height: 24rem;
+	border: 0;
+}
+
 @media (width < 650px) {
 	.mba-quote-grid {
 		grid-template-columns: minmax(0, 1fr);

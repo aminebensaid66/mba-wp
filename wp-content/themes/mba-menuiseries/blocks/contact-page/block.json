@@ -1,0 +1,7 @@
+{
+  "apiVersion": 3,
+  "name": "mba/contact-page",
+  "title": "MBA contact page",
+  "category": "theme",
+  "supports": { "html": false, "inserter": false }
+}

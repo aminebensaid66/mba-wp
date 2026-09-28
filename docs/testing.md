@@ -106,3 +106,7 @@ Submit `/devis/` with valid data and confirm one private Quote Lead is saved, th
 ## Blog verification (issue #16)
 
 Open `/conseils/`, a category archive, and a published article. Verify category links, nine-item pagination, cover/excerpt cards, readable article width, visible published/updated/author metadata, related articles, and the contextual quote CTA. Confirm article content remains editable through the native post editor.
+
+## Contact page and short form (issue #19)
+
+Open `/contact/` and verify only configured company details, opening hours, service areas, showroom visit guidance, and social links appear. Phone, email, and WhatsApp actions must use their matching link schemes. The directions link must work before map consent; the Google Maps iframe must not exist until its explicit load button is activated. Submit with only a phone and then only an email, and verify success, invalid-input, notification-failure, and duplicate/spam states. Confirm enquiries are stored as private contact leads in wp-admin and that the message form requires privacy consent. With no optional business or social settings configured, their sections must be omitted.

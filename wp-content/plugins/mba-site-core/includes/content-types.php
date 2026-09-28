@@ -160,6 +160,25 @@ function mba_core_register_content_types(): void {
 		)
 	);
 
+	register_post_type(
+		'mba_contact_lead',
+		array(
+			'labels' => mba_core_post_type_labels( __( 'Contact enquiry', 'mba-site-core' ), __( 'Contact enquiries', 'mba-site-core' ) ),
+			'public' => false,
+			'publicly_queryable' => false,
+			'exclude_from_search' => true,
+			'show_ui' => true,
+			'show_in_rest' => false,
+			'has_archive' => false,
+			'rewrite' => false,
+			'map_meta_cap' => true,
+			'capability_type' => 'post',
+			'menu_icon' => 'dashicons-email',
+			'menu_position' => 26,
+			'supports' => array( 'title' ),
+		)
+	);
+
 	register_taxonomy(
 		'mba_product_category',
 		array( 'mba_product', 'mba_project' ),
