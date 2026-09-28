@@ -3,13 +3,14 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; }
 
-function mba_theme_blog_card( WP_Post $post ): string {
+function mba_theme_blog_card( WP_Post $post, bool $prioritize_image = false ): string {
 	$url = get_permalink( $post );
 	return '<article class="mba-card mba-blog-card">' . ( has_post_thumbnail( $post ) ? '<a href="' . esc_url( $url ) . '">' . get_the_post_thumbnail(
 		$post,
 		'mba-card',
 		array(
-			'loading' => 'lazy',
+			'loading' => $prioritize_image ? 'eager' : 'lazy',
+			'fetchpriority' => $prioritize_image ? 'high' : 'auto',
 			'decoding' => 'async',
 			'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
 		)
@@ -32,7 +33,7 @@ function mba_theme_render_blog_archive(): string {
 	if ( $query->have_posts() ) {
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$html .= mba_theme_blog_card( get_post() );
+			$html .= mba_theme_blog_card( get_post(), 0 === $query->current_post );
 		}
 	} else {
 		$html .= '<p role="status">' . esc_html__( 'Aucun article disponible.', 'mba-menuiseries' ) . '</p>'; }

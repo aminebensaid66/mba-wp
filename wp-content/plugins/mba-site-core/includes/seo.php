@@ -115,10 +115,17 @@ function mba_core_seo_register_meta(): void {
 				},
 			)
 		);
-		add_meta_box( 'mba-seo', __( 'Search and social preview', 'mba-site-core' ), 'mba_core_seo_meta_box', $post_type, 'normal', 'default' );
 	}
 }
 add_action( 'init', 'mba_core_seo_register_meta' );
+
+/** Register editor controls only during the admin meta-box lifecycle. */
+function mba_core_seo_add_meta_boxes(): void {
+	foreach ( array( 'page', 'post', 'mba_product', 'mba_project' ) as $post_type ) {
+		add_meta_box( 'mba-seo', __( 'Search and social preview', 'mba-site-core' ), 'mba_core_seo_meta_box', $post_type, 'normal', 'default' );
+	}
+}
+add_action( 'add_meta_boxes', 'mba_core_seo_add_meta_boxes' );
 
 /** Render editor SEO overrides; the featured image remains the per-page share-image control. */
 function mba_core_seo_meta_box( WP_Post $post ): void {

@@ -4,6 +4,8 @@
 define( 'ABSPATH', __DIR__ );
 $GLOBALS['mba_seo_test_options'] = array();
 $GLOBALS['mba_seo_test_post'] = null;
+$GLOBALS['mba_seo_test_hooks'] = array();
+$GLOBALS['mba_seo_test_meta_boxes'] = 0;
 class_alias(
 	get_class(
 		new class() {
@@ -16,12 +18,14 @@ class_alias(
 	),
 	'WP_Post'
 );
-function add_action( $hook, $callback ) {}
+function add_action( $hook, $callback ) {
+	$GLOBALS['mba_seo_test_hooks'][ $hook ][] = $callback; }
 function add_filter( $hook, $callback ) {}
 function __( $text, $domain = null ) {
 	return $text; }
 function register_post_meta( $type, $key, $args ) {}
-function add_meta_box( $id, $title, $callback, $type, $context, $priority ) {}
+function add_meta_box( $id, $title, $callback, $type, $context, $priority ) {
+	++$GLOBALS['mba_seo_test_meta_boxes']; }
 function home_url( $path = '/' ) {
 	return 'https://mba.example' . $path;
 }
@@ -92,6 +96,10 @@ $fail = static function ( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
 	exit( 1 );
 };
+mba_core_seo_register_meta();
+0 === $GLOBALS['mba_seo_test_meta_boxes'] || $fail( 'Frontend SEO metadata registration must not invoke admin-only meta-box APIs.' );
+mba_core_seo_add_meta_boxes();
+4 === $GLOBALS['mba_seo_test_meta_boxes'] || $fail( 'SEO editor boxes must still be registered for supported content types.' );
 $redirects = mba_core_seo_sanitize_redirects(
 	"/old-page/ => /new-page/\n/legacy/ => /new-page/\n/away/ => https://evil.example/\n/loop/ => /loop/\n/cycle-a/ => /cycle-b/\n/cycle-b/ => /cycle-a/\n//evil.example/path => /safe/\n/bad/?query=1 => /safe/"
 );

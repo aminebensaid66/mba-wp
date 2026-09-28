@@ -20,6 +20,12 @@ require_once __DIR__ . '/includes/blog.php';
 require_once __DIR__ . '/includes/faq.php';
 require_once __DIR__ . '/includes/contact-page.php';
 
+/** Return a content-derived version so browsers refetch changed theme assets. */
+function mba_theme_asset_version( string $relative_path ): string {
+	$path = get_theme_file_path( $relative_path );
+	return file_exists( $path ) ? (string) filemtime( $path ) : '0.1.0';
+}
+
 /**
  * Theme features.
  */
@@ -44,10 +50,10 @@ function mba_theme_enqueue_assets(): void {
 		file_exists( $path ) ? (string) filemtime( $path ) : '0.1.0'
 	);
 	if ( is_singular( 'mba_project' ) ) {
-		wp_enqueue_script( 'mba-project-gallery', get_theme_file_uri( 'assets/js/project-gallery.js' ), array(), '0.1.0', true );
+		wp_enqueue_script( 'mba-project-gallery', get_theme_file_uri( 'assets/js/project-gallery.js' ), array(), mba_theme_asset_version( 'assets/js/project-gallery.js' ), true );
 	}
 	if ( ( function_exists( 'mba_core_phone_url' ) && mba_core_phone_url() ) || ( function_exists( 'mba_core_whatsapp_url' ) && mba_core_whatsapp_url() ) ) {
-		wp_enqueue_script( 'mba-mobile-conversion', get_theme_file_uri( 'assets/js/mobile-conversion.js' ), array(), '0.1.0', true );
+		wp_enqueue_script( 'mba-mobile-conversion', get_theme_file_uri( 'assets/js/mobile-conversion.js' ), array(), mba_theme_asset_version( 'assets/js/mobile-conversion.js' ), true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'mba_theme_enqueue_assets' );
