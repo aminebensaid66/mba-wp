@@ -18,7 +18,7 @@
   "scripts": {
     "lint:php": "@php ./bin/lint-php.php",
     "phpcs": "phpcs -n",
-    "phpstan": "phpstan analyse --no-progress --memory-limit=1G",
+    "phpstan": "phpstan analyse --no-progress --memory-limit=2G",
     "test:lint-failure": "sh ./tests/ci/assert-invalid-php-fails.sh",
     "check": [
       "@lint:php",
@@ -29,12 +29,14 @@
       "@test:products",
       "@test:quotes",
       "@test:contact",
+      "@test:seo",
       "@test:lint-failure"
     ],
     "test:theme": "@php tests/theme/theme-foundation.php",
     "test:content-types": "@php tests/php/content-types-test.php",
     "test:products": "@php tests/php/product-fields-test.php",
     "test:quotes": "@php tests/php/quote-leads-test.php",
-    "test:contact": "@php tests/php/contact-leads-test.php"
+    "test:contact": "@php tests/php/contact-leads-test.php",
+    "test:seo": "@php tests/php/seo-test.php"
   }
 }

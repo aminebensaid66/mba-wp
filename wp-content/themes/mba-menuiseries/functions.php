@@ -24,6 +24,7 @@ require_once __DIR__ . '/includes/contact-page.php';
  * Theme features.
  */
 function mba_theme_setup(): void {
+	add_theme_support( 'title-tag' );
 	add_theme_support( 'wp-block-styles' );
 	add_theme_support( 'responsive-embeds' );
 	add_theme_support( 'editor-styles' );
