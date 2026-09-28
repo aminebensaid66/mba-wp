@@ -317,6 +317,12 @@ body.admin-bar {
 	object-fit: cover;
 }
 
+.mba-home-cards .mba-card--logo img {
+	padding: 1rem;
+	background: var(--wp--preset--color--white, #fff);
+	object-fit: contain;
+}
+
 .mba-home-cards .mba-card__body h3,
 .mba-home-cards .mba-card__body p {
 	margin-inline: 0;

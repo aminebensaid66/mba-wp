@@ -15,7 +15,15 @@ function mba_theme_register_product_archive_block(): void {
 add_action( 'init', 'mba_theme_register_product_archive_block' );
 
 function mba_product_archive_card( WP_Post $product ): string {
-	$image = get_the_post_thumbnail( $product, 'large', array( 'loading' => 'lazy' ) );
+	$image = get_the_post_thumbnail(
+		$product,
+		'mba-card',
+		array(
+			'loading' => 'lazy',
+			'decoding' => 'async',
+			'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+		)
+	);
 	$terms = get_the_terms( $product, 'mba_product_category' );
 	$labels = array();
 	if ( $terms && ! is_wp_error( $terms ) ) {

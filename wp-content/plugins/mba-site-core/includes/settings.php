@@ -18,7 +18,7 @@ function mba_core_settings_fields(): array {
 	$fields = array(
 		'mba_legal_name' => array( __( 'Legal business name', 'mba-site-core' ), 'text', '' ),
 		'mba_description' => array( __( 'Short company description', 'mba-site-core' ), 'textarea', '' ),
-		'mba_logo_id' => array( __( 'Company logo', 'mba-site-core' ), 'image', __( 'Approved transparent PNG/WebP, preferably at least 600 px wide and under 200 KB.', 'mba-site-core' ) ),
+		'mba_logo_id' => array( __( 'Company logo', 'mba-site-core' ), 'image', __( 'Use a transparent logo at least 600 px wide. Upload the original; WordPress creates display sizes automatically.', 'mba-site-core' ) ),
 		'mba_favicon_id' => array( __( 'Favicon', 'mba-site-core' ), 'favicon', __( 'Square image at least 512×512 px. Updates the native WordPress site icon.', 'mba-site-core' ) ),
 		'mba_phone' => array( __( 'Main phone', 'mba-site-core' ), 'phone', __( 'International country code required, e.g. +216 12 345 678. Spaces, parentheses, dots and hyphens are accepted.', 'mba-site-core' ) ),
 		'mba_secondary_phone' => array( __( 'Secondary phone', 'mba-site-core' ), 'phone', '' ),
@@ -55,10 +55,10 @@ function mba_core_settings_fields(): array {
 		'mba_homepage_process' => array( __( 'Homepage project process', 'mba-site-core' ), 'textarea', __( 'One confirmed step per line; leave blank to hide this section.', 'mba-site-core' ) ),
 		'mba_homepage_materials' => array( __( 'Homepage materials and finishes', 'mba-site-core' ), 'textarea', '' ),
 		'mba_homepage_final_cta' => array( __( 'Homepage final CTA text', 'mba-site-core' ), 'textarea', '' ),
-		'mba_homepage_hero_image_id' => array( __( 'Homepage hero image', 'mba-site-core' ), 'image', '' ),
-		'mba_homepage_intro_image_id' => array( __( 'Homepage introduction image', 'mba-site-core' ), 'image', '' ),
-		'mba_homepage_process_image_id' => array( __( 'Homepage process image', 'mba-site-core' ), 'image', '' ),
-		'mba_homepage_materials_image_id' => array( __( 'Homepage materials image', 'mba-site-core' ), 'image', '' ),
+		'mba_homepage_hero_image_id' => array( __( 'Homepage hero image', 'mba-site-core' ), 'image', __( 'Choose a landscape photo; upload the original without resizing. WordPress generates responsive sizes.', 'mba-site-core' ) ),
+		'mba_homepage_intro_image_id' => array( __( 'Homepage introduction image', 'mba-site-core' ), 'image', __( 'Upload the original; WordPress generates responsive sizes.', 'mba-site-core' ) ),
+		'mba_homepage_process_image_id' => array( __( 'Homepage process image', 'mba-site-core' ), 'image', __( 'Upload the original; WordPress generates responsive sizes.', 'mba-site-core' ) ),
+		'mba_homepage_materials_image_id' => array( __( 'Homepage materials image', 'mba-site-core' ), 'image', __( 'Upload the original; WordPress generates responsive sizes.', 'mba-site-core' ) ),
 		'mba_company_history' => array( __( 'Company history', 'mba-site-core' ), 'textarea', '' ),
 		'mba_company_founder_team' => array( __( 'Founder and team', 'mba-site-core' ), 'textarea', '' ),
 		'mba_company_values' => array( __( 'Values and quality approach', 'mba-site-core' ), 'textarea', '' ),
@@ -241,7 +241,15 @@ function mba_core_render_company_block( array $attributes ): string {
 	}
 	$label = is_string( $attributes['label'] ?? null ) ? $attributes['label'] : '';
 	if ( 'mba_logo_id' === $key ) {
-		return wp_get_attachment_image( (int) $value, 'medium', false, array( 'class' => 'mba-company-logo' ) );
+		return wp_get_attachment_image(
+			(int) $value,
+			'mba-logo',
+			false,
+			array(
+				'class' => 'mba-company-logo',
+				'decoding' => 'async',
+			)
+		);
 	}
 	if ( 'mba_favicon_id' === $key ) {
 		return '';

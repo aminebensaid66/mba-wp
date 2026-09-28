@@ -31,6 +31,7 @@
       "@test:contact",
       "@test:seo",
       "@test:analytics",
+      "@test:media",
       "@test:lint-failure"
     ],
     "test:theme": "@php tests/theme/theme-foundation.php",
@@ -39,6 +40,7 @@
     "test:quotes": "@php tests/php/quote-leads-test.php",
     "test:contact": "@php tests/php/contact-leads-test.php",
     "test:seo": "@php tests/php/seo-test.php",
-    "test:analytics": "@php tests/php/analytics-test.php"
+    "test:analytics": "@php tests/php/analytics-test.php",
+    "test:media": "@php tests/php/media-test.php"
   }
 }
