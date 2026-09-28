@@ -18,6 +18,7 @@ require_once __DIR__ . '/includes/project-archive.php';
 require_once __DIR__ . '/includes/project-detail.php';
 require_once __DIR__ . '/includes/blog.php';
 require_once __DIR__ . '/includes/faq.php';
+require_once __DIR__ . '/includes/contact-page.php';
 
 /**
  * Theme features.

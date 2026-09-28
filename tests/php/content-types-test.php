@@ -18,7 +18,10 @@ function register_post_type( $name, $args ) {
 	$GLOBALS['mba_test_post_types'][ $name ] = $args;
 }
 function register_taxonomy( $name, $object_type, $args ) {
-	$GLOBALS['mba_test_taxonomies'][ $name ] = array( 'object_type' => $object_type, 'args' => $args );
+	$GLOBALS['mba_test_taxonomies'][ $name ] = array(
+		'object_type' => $object_type,
+		'args' => $args,
+	);
 }
 
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/content-types.php';
@@ -40,8 +43,10 @@ foreach ( $expected as $type ) {
 	isset( $args['labels']['add_new_item'], $args['labels']['edit_item'], $args['labels']['all_items'] ) || $fail( "{$type} labels incomplete" );
 }
 
-$quote_lead = $GLOBALS['mba_test_post_types']['mba_quote_lead'] ?? array();
-false === ( $quote_lead['public'] ?? true ) && false === ( $quote_lead['publicly_queryable'] ?? true ) || $fail( 'Quote leads must remain private.' );
+foreach ( array( 'mba_quote_lead', 'mba_contact_lead' ) as $lead_type ) {
+	$lead = $GLOBALS['mba_test_post_types'][ $lead_type ] ?? array();
+	false === ( $lead['public'] ?? true ) && false === ( $lead['publicly_queryable'] ?? true ) || $fail( "{$lead_type} must remain private." );
+}
 
 $product = $GLOBALS['mba_test_post_types']['mba_product'];
 $project = $GLOBALS['mba_test_post_types']['mba_project'];
