@@ -7,6 +7,7 @@ define( 'ABSPATH', __DIR__ );
 
 $GLOBALS['mba_test_post_types'] = array();
 $GLOBALS['mba_test_taxonomies'] = array();
+$GLOBALS['mba_test_role_caps'] = array( 'administrator' => array(), 'editor' => array() );
 
 function __( $text, $domain = null ) { // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralDomain
 	return $text;
@@ -23,6 +24,16 @@ function register_taxonomy( $name, $object_type, $args ) {
 		'args' => $args,
 	);
 }
+function get_role( $name ) {
+	if ( ! isset( $GLOBALS['mba_test_role_caps'][ $name ] ) ) { return null; }
+	return new class( $name ) {
+		private string $name;
+		public function __construct( string $name ) { $this->name = $name; }
+		public function add_cap( string $capability ): void { $GLOBALS['mba_test_role_caps'][ $this->name ][ $capability ] = true; }
+	};
+}
+function update_option( $name, $value, $autoload = null ): void { $GLOBALS['mba_test_options'][ $name ] = $value; }
+function get_option( $name ) { return $GLOBALS['mba_test_options'][ $name ] ?? false; }
 
 require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/content-types.php';
 mba_core_register_content_types();
@@ -46,7 +57,11 @@ foreach ( $expected as $type ) {
 foreach ( array( 'mba_quote_lead', 'mba_contact_lead' ) as $lead_type ) {
 	$lead = $GLOBALS['mba_test_post_types'][ $lead_type ] ?? array();
 	false === ( $lead['public'] ?? true ) && false === ( $lead['publicly_queryable'] ?? true ) || $fail( "{$lead_type} must remain private." );
+	array( 'mba_lead', 'mba_leads' ) === ( $lead['capability_type'] ?? null ) || $fail( "{$lead_type} must use dedicated lead capabilities." );
 }
+mba_core_install_lead_caps();
+isset( $GLOBALS['mba_test_role_caps']['administrator']['read_private_mba_leads'] ) || $fail( 'Administrators must have access to private leads.' );
+isset( $GLOBALS['mba_test_role_caps']['editor']['read_private_mba_leads'] ) && $fail( 'Editors must not receive private lead access by default.' );
 
 $product = $GLOBALS['mba_test_post_types']['mba_product'];
 $project = $GLOBALS['mba_test_post_types']['mba_project'];

@@ -26,6 +26,7 @@ require_once MBA_CORE_PATH . 'includes/project-fields.php';
 require_once MBA_CORE_PATH . 'includes/reusable-content.php';
 require_once MBA_CORE_PATH . 'includes/settings.php';
 require_once MBA_CORE_PATH . 'includes/quote-leads.php';
+require_once MBA_CORE_PATH . 'includes/privacy.php';
 require_once MBA_CORE_PATH . 'includes/contact-leads.php';
 require_once MBA_CORE_PATH . 'includes/seo.php';
 require_once MBA_CORE_PATH . 'includes/analytics.php';
@@ -37,6 +38,7 @@ require_once MBA_CORE_PATH . 'includes/media.php';
 function mba_core_activate(): void {
 	mba_core_register_content_types();
 	mba_core_install_owner_caps();
+	mba_core_install_lead_caps();
 	flush_rewrite_rules();
 }
 
