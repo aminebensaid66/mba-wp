@@ -73,6 +73,8 @@ See [company settings API and Editor permissions](docs/company-settings.md) for 
 
 For editorial workflows, image handling, approvals, and owner training, use [`docs/owner-guide.md`](docs/owner-guide.md).
 
+Production cutover remains a separate, evidence-based step. Use [`docs/production-launch.md`](docs/production-launch.md) with the hosting and MBA owners; a successful local/CI run alone does not approve or verify a live launch.
+
 ## Useful commands
 
 ```bash
