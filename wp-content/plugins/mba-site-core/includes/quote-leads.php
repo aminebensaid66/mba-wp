@@ -125,6 +125,8 @@ function mba_core_quote_store_uploads(): array|WP_Error {
 		if ( '' !== $name ) {
 			$indexes[] = $index; }
 	}
+	if ( ! $indexes ) {
+		return array(); }
 	if ( count( $indexes ) > 3 ) {
 		return new WP_Error( 'too_many_files', __( 'Vous pouvez joindre trois fichiers maximum.', 'mba-site-core' ) ); }
 	$allowed = array(
@@ -366,7 +368,9 @@ function mba_core_handle_quote_submission(): void {
 	$stored = true;
 	foreach ( $data as $key => $value ) {
 		update_post_meta( $lead_id, '_mba_quote_' . $key, $value );
-		if ( get_post_meta( $lead_id, '_mba_quote_' . $key, true ) !== $value ) {
+		$saved_value = get_post_meta( $lead_id, '_mba_quote_' . $key, true );
+		$matches = is_array( $value ) ? $saved_value === $value : (string) $saved_value === (string) $value;
+		if ( ! $matches ) {
 			$stored = false; }
 	}
 	if ( ! $stored ) {

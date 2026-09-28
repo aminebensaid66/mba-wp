@@ -5,10 +5,12 @@
     "lint:js": "eslint .",
     "lint:css": "stylelint \"wp-content/**/*.css\"",
     "validate:config": "node tests/config/validate-config.mjs",
+    "test:e2e": "sh bin/test-e2e.sh",
     "check": "npm run lint:js && npm run lint:css && npm run validate:config"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
+    "@playwright/test": "^1.63.0",
     "eslint": "^10.0.0",
     "stylelint": "^17.0.0",
     "stylelint-config-standard": "^40.0.0",
