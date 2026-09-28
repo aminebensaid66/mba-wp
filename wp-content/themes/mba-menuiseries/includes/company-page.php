@@ -26,7 +26,7 @@ function mba_company_lines( string $value ): array {
 function mba_theme_render_company_page(): string {
 	$name = (string) mba_company_setting( 'mba_legal_name' );
 	$name = $name ? $name : get_bloginfo( 'name' );
-	$html = '<main id="main" class="mba-company-page"><section class="mba-section mba-company-intro" aria-labelledby="mba-company-title"><p class="mba-eyebrow">' . esc_html( $name ) . '</p><h1 id="mba-company-title">' . esc_html__( 'Une entreprise au service de vos projets', 'mba-menuiseries' ) . '</h1>';
+	$html = '<main id="main" tabindex="-1" class="mba-company-page"><section class="mba-section mba-company-intro" aria-labelledby="mba-company-title"><p class="mba-eyebrow">' . esc_html( $name ) . '</p><h1 id="mba-company-title">' . esc_html__( 'Une entreprise au service de vos projets', 'mba-menuiseries' ) . '</h1>';
 	$history = (string) mba_company_setting( 'mba_company_history' );
 	if ( $history ) {
 		$html .= '<p class="mba-lede">' . nl2br( esc_html( $history ) ) . '</p>';

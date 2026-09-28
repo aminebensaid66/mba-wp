@@ -109,7 +109,7 @@ function mba_theme_render_project_archive(): string {
 			'order' => 'ASC',
 		)
 	);
-	$html = '<main id="main" class="mba-project-archive"><section class="mba-section" aria-labelledby="mba-projects-title"><h1 id="mba-projects-title">' . esc_html__( 'Réalisations', 'mba-menuiseries' ) . '</h1><p>' . esc_html__( 'Découvrez des projets publiés par MBA. Les adresses privées ne sont jamais affichées.', 'mba-menuiseries' ) . '</p><form class="mba-archive-filters" method="get" action="' . esc_url( get_post_type_archive_link( 'mba_project' ) ) . '">';
+	$html = '<main id="main" tabindex="-1" class="mba-project-archive"><section class="mba-section" aria-labelledby="mba-projects-title"><h1 id="mba-projects-title">' . esc_html__( 'Réalisations', 'mba-menuiseries' ) . '</h1><p>' . esc_html__( 'Découvrez des projets publiés par MBA. Les adresses privées ne sont jamais affichées.', 'mba-menuiseries' ) . '</p><form class="mba-archive-filters" method="get" action="' . esc_url( get_post_type_archive_link( 'mba_project' ) ) . '">';
 	foreach ( array(
 		'type' => array( __( 'Type de projet', 'mba-menuiseries' ), $types, 'type_projet', 'Toutes les catégories' ),
 		'location' => array( __( 'Zone générale', 'mba-menuiseries' ), $locations, 'lieu', 'Toutes les zones' ),

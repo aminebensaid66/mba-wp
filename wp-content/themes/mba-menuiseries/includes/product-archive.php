@@ -87,7 +87,7 @@ function mba_theme_render_product_archive(): string {
 			'orderby' => 'name',
 		)
 	);
-	$html = '<main id="main" class="mba-product-archive"><section class="mba-section" aria-labelledby="mba-products-title"><h1 id="mba-products-title">' . esc_html__( 'Produits', 'mba-menuiseries' ) . '</h1><p>' . esc_html__( 'Explorez les produits publiés par MBA et utilisez les filtres pour trouver les options pertinentes.', 'mba-menuiseries' ) . '</p><form class="mba-archive-filters" method="get" action="' . esc_url( get_post_type_archive_link( 'mba_product' ) ) . '"><div><label for="mba-category-filter">' . esc_html__( 'Catégorie', 'mba-menuiseries' ) . '</label><select id="mba-category-filter" name="categorie"><option value="">' . esc_html__( 'Toutes les catégories', 'mba-menuiseries' ) . '</option>';
+	$html = '<main id="main" tabindex="-1" class="mba-product-archive"><section class="mba-section" aria-labelledby="mba-products-title"><h1 id="mba-products-title">' . esc_html__( 'Produits', 'mba-menuiseries' ) . '</h1><p>' . esc_html__( 'Explorez les produits publiés par MBA et utilisez les filtres pour trouver les options pertinentes.', 'mba-menuiseries' ) . '</p><form class="mba-archive-filters" method="get" action="' . esc_url( get_post_type_archive_link( 'mba_product' ) ) . '"><div><label for="mba-category-filter">' . esc_html__( 'Catégorie', 'mba-menuiseries' ) . '</label><select id="mba-category-filter" name="categorie"><option value="">' . esc_html__( 'Toutes les catégories', 'mba-menuiseries' ) . '</option>';
 	if ( ! is_wp_error( $categories ) ) {
 		foreach ( $categories as $term ) {
 			$html .= '<option value="' . esc_attr( $term->slug ) . '" ' . selected( $category, $term->slug, false ) . '>' . esc_html( $term->name ) . '</option>';
