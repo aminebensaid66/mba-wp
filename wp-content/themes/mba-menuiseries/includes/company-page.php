@@ -45,7 +45,16 @@ function mba_theme_render_company_page(): string {
 	if ( is_array( $gallery ) && $gallery ) {
 		$html .= '<section class="mba-section" aria-labelledby="mba-workshop-heading"><h2 id="mba-workshop-heading">' . esc_html__( 'Atelier et équipe', 'mba-menuiseries' ) . '</h2><div class="mba-company-gallery">';
 		foreach ( $gallery as $image_id ) {
-			$html .= wp_get_attachment_image( (int) $image_id, 'large', false, array( 'loading' => 'lazy' ) );
+			$html .= wp_get_attachment_image(
+				(int) $image_id,
+				'mba-gallery',
+				false,
+				array(
+					'loading' => 'lazy',
+					'decoding' => 'async',
+					'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+				)
+			);
 		}
 		$html .= '</div></section>';
 	}

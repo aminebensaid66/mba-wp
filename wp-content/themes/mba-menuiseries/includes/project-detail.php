@@ -33,11 +33,13 @@ function mba_project_detail_gallery( int $project_id, string $key, string $label
 		$alt = $alt ? $alt : sprintf( __( '%s photo for project', 'mba-menuiseries' ), $label );
 		$thumb = wp_get_attachment_image(
 			$image_id,
-			'large',
+			'mba-gallery',
 			false,
 			array(
 				'loading' => 'lazy',
+				'decoding' => 'async',
 				'alt' => $alt,
+				'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
 			)
 		);
 		if ( ! $thumb ) {
@@ -72,7 +74,15 @@ function mba_project_detail_related_projects( int $project_id ): string {
 	while ( $query->have_posts() ) {
 		$query->the_post();
 		$url = add_query_arg( 'from_project', $project_id, get_permalink() );
-		$html .= '<article class="mba-card">' . ( has_post_thumbnail() ? '<a href="' . esc_url( $url ) . '">' . get_the_post_thumbnail( get_the_ID(), 'large', array( 'loading' => 'lazy' ) ) . '</a>' : '' ) . '<div class="mba-card__body"><h3><a href="' . esc_url( $url ) . '">' . esc_html( get_the_title() ) . '</a></h3></div></article>';
+		$html .= '<article class="mba-card">' . ( has_post_thumbnail() ? '<a href="' . esc_url( $url ) . '">' . get_the_post_thumbnail(
+			get_the_ID(),
+			'mba-card',
+			array(
+				'loading' => 'lazy',
+				'decoding' => 'async',
+				'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+			)
+		) . '</a>' : '' ) . '<div class="mba-card__body"><h3><a href="' . esc_url( $url ) . '">' . esc_html( get_the_title() ) . '</a></h3></div></article>';
 	}
 	wp_reset_postdata();
 	return $html . '</div>';
@@ -86,7 +96,16 @@ function mba_theme_render_project_detail(): string {
 	$location = trim( implode( ', ', array_filter( array( mba_project_detail_meta( $id, 'mba_location_city' ), mba_project_detail_meta( $id, 'mba_location_region' ) ) ) ) );
 	$date = mba_project_detail_meta( $id, 'mba_completion_date' );
 	$year = $date ? substr( (string) $date, 0, 4 ) : '';
-	$hero = has_post_thumbnail( $project ) ? '<div class="mba-project-hero__media">' . get_the_post_thumbnail( $project, 'large', array( 'loading' => 'eager' ) ) . '</div>' : '';
+	$hero = has_post_thumbnail( $project ) ? '<div class="mba-project-hero__media">' . get_the_post_thumbnail(
+		$project,
+		'mba-hero',
+		array(
+			'loading' => 'eager',
+			'fetchpriority' => 'high',
+			'decoding' => 'async',
+			'sizes' => '(max-width: 767px) 100vw, 50vw',
+		)
+	) . '</div>' : '';
 	$meta = array_filter( array( $location, $year ) );
 	$html = '<main id="main" class="mba-project-detail"><section class="mba-project-hero mba-section" aria-labelledby="mba-project-title">' . $hero . '<div><p class="mba-eyebrow">' . esc_html__( 'Réalisation', 'mba-menuiseries' ) . '</p><h1 id="mba-project-title">' . esc_html( get_the_title( $project ) ) . '</h1>' . ( $meta ? '<p class="mba-card__meta">' . esc_html( implode( ' · ', $meta ) ) . '</p>' : '' ) . '</div></section>';
 	foreach ( array(

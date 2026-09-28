@@ -28,7 +28,15 @@ function mba_project_archive_card( WP_Post $project ): string {
 	$meta = array_filter( array( trim( $city . ( $region ? ', ' . $region : '' ) ), $year, $products ? implode( ', ', $products ) : '' ) );
 	$html = '<article class="mba-card mba-project-card">';
 	if ( has_post_thumbnail( $project ) ) {
-		$html .= '<a href="' . esc_url( get_permalink( $project ) ) . '">' . get_the_post_thumbnail( $project, 'large', array( 'loading' => 'lazy' ) ) . '</a>';
+		$html .= '<a href="' . esc_url( get_permalink( $project ) ) . '">' . get_the_post_thumbnail(
+			$project,
+			'mba-card',
+			array(
+				'loading' => 'lazy',
+				'decoding' => 'async',
+				'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+			)
+		) . '</a>';
 	}
 	$html .= '<div class="mba-card__body"><h2><a href="' . esc_url( get_permalink( $project ) ) . '">' . esc_html( get_the_title( $project ) ) . '</a></h2>' . ( $meta ? '<p class="mba-card__meta">' . esc_html( implode( ' · ', $meta ) ) . '</p>' : '' ) . '</div></article>';
 	return $html;

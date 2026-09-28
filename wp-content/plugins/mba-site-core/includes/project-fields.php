@@ -158,7 +158,7 @@ function mba_core_render_project_meta_box( WP_Post $post ): void {
 	?>
 	<div class="mba-product-fields">
 		<p class="description mba-guidance"><strong><?php esc_html_e( 'Required:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Use the project title. All fields below are optional. Select project type, general location and product categories in the editor sidebar for archive filters.', 'mba-site-core' ); ?></p>
-		<p class="description mba-guidance"><strong><?php esc_html_e( 'Privacy and photos:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Enter only city/region, never a private street address. Obtain client consent before publication. Prefer 4:3 JPEG/WebP images at least 1600×1200 px and under 500 KB. Add accurate captions and alt text in the Media Library; drag photos to reorder.', 'mba-site-core' ); ?></p>
+		<p class="description mba-guidance"><strong><?php esc_html_e( 'Privacy and photos:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Enter only city/region, never a private street address. Obtain client consent before publication. Upload original project photos; WordPress creates responsive sizes and WebP copies where supported. Set captions, alt text, and crop focal points in the Media Library; drag photos to reorder.', 'mba-site-core' ); ?></p>
 		<div class="mba-grid-fields">
 			<?php
 			foreach ( array(

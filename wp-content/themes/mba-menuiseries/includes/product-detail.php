@@ -56,7 +56,15 @@ function mba_product_detail_related_cards( array $ids, string $class = '' ): str
 	$html = '<div class="mba-home-cards ' . esc_attr( $class ) . '">';
 	while ( $query->have_posts() ) {
 		$query->the_post();
-		$html .= '<article class="mba-card">' . ( has_post_thumbnail() ? '<a href="' . esc_url( get_permalink() ) . '">' . get_the_post_thumbnail( get_the_ID(), 'large', array( 'loading' => 'lazy' ) ) . '</a>' : '' ) . '<div class="mba-card__body"><h3><a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a></h3></div></article>';
+		$html .= '<article class="mba-card">' . ( has_post_thumbnail() ? '<a href="' . esc_url( get_permalink() ) . '">' . get_the_post_thumbnail(
+			get_the_ID(),
+			'mba-card',
+			array(
+				'loading' => 'lazy',
+				'decoding' => 'async',
+				'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+			)
+		) . '</a>' : '' ) . '<div class="mba-card__body"><h3><a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a></h3></div></article>';
 	}
 	wp_reset_postdata();
 	return $html . '</div>';
@@ -69,7 +77,16 @@ function mba_theme_render_product_detail(): string {
 	}
 	$id = (int) $product->ID;
 	$title = get_the_title( $product );
-	$html = '<main id="main" class="mba-product-detail"><section class="mba-product-hero mba-section" aria-labelledby="mba-product-title">' . ( has_post_thumbnail( $product ) ? '<div class="mba-product-hero__media">' . get_the_post_thumbnail( $product, 'large', array( 'loading' => 'eager' ) ) . '</div>' : '' ) . '<div><p class="mba-eyebrow">' . esc_html__( 'Produit', 'mba-menuiseries' ) . '</p><h1 id="mba-product-title">' . esc_html( $title ) . '</h1>' . ( mba_product_detail_meta( $id, 'mba_short_description' ) ? '<p class="mba-lede">' . nl2br( esc_html( mba_product_detail_meta( $id, 'mba_short_description' ) ) ) . '</p>' : '' ) . '</div></section>';
+	$html = '<main id="main" class="mba-product-detail"><section class="mba-product-hero mba-section" aria-labelledby="mba-product-title">' . ( has_post_thumbnail( $product ) ? '<div class="mba-product-hero__media">' . get_the_post_thumbnail(
+		$product,
+		'mba-hero',
+		array(
+			'loading' => 'eager',
+			'fetchpriority' => 'high',
+			'decoding' => 'async',
+			'sizes' => '(max-width: 767px) 100vw, 50vw',
+		)
+	) . '</div>' : '' ) . '<div><p class="mba-eyebrow">' . esc_html__( 'Produit', 'mba-menuiseries' ) . '</p><h1 id="mba-product-title">' . esc_html( $title ) . '</h1>' . ( mba_product_detail_meta( $id, 'mba_short_description' ) ? '<p class="mba-lede">' . nl2br( esc_html( mba_product_detail_meta( $id, 'mba_short_description' ) ) ) . '</p>' : '' ) . '</div></section>';
 	$html .= mba_product_detail_section( 'mba-benefits-heading', __( 'Bénéfices', 'mba-menuiseries' ), mba_product_detail_list( mba_product_detail_meta( $id, 'mba_benefits', array() ) ) );
 	$html .= mba_product_detail_section( 'mba-configurations-heading', __( 'Configurations et options', 'mba-menuiseries' ), mba_product_detail_list( array_merge( (array) mba_product_detail_meta( $id, 'mba_configurations', array() ), (array) mba_product_detail_meta( $id, 'mba_glazing_options', array() ), (array) mba_product_detail_meta( $id, 'mba_applications', array() ) ) ) );
 	foreach ( array(
@@ -109,7 +126,16 @@ function mba_theme_render_product_detail(): string {
 		$gallery_html = '<div class="mba-product-gallery">';
 		foreach ( $gallery as $image_id ) {
 			$full = wp_get_attachment_image_url( (int) $image_id, 'full' );
-			$thumb = wp_get_attachment_image( (int) $image_id, 'large', false, array( 'loading' => 'lazy' ) );
+			$thumb = wp_get_attachment_image(
+				(int) $image_id,
+				'mba-gallery',
+				false,
+				array(
+					'loading' => 'lazy',
+					'decoding' => 'async',
+					'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+				)
+			);
 			if ( $full && $thumb ) {
 				$gallery_html .= '<a href="' . esc_url( $full ) . '" data-lightbox="mba-product-' . esc_attr( (string) $id ) . '">' . $thumb . '</a>';
 			}

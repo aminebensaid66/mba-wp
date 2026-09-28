@@ -57,14 +57,18 @@ function mba_homepage_content_query( string $post_type, int $limit = 3 ): WP_Que
 
 function mba_homepage_image( string $key, string $alt, string $class = '' ): string {
 	$id = (int) mba_homepage_setting( $key );
+	$is_hero = 'mba_homepage_hero_image_id' === $key;
 	return $id ? (string) wp_get_attachment_image(
 		$id,
-		'large',
+		$is_hero ? 'mba-hero' : 'mba-gallery',
 		false,
 		array(
 			'class' => $class,
 			'alt' => $alt,
-			'loading' => 'lazy',
+			'loading' => $is_hero ? 'eager' : 'lazy',
+			'decoding' => 'async',
+			'sizes' => $is_hero ? '100vw' : '(max-width: 767px) 100vw, 50vw',
+			'fetchpriority' => $is_hero ? 'high' : 'auto',
 		)
 	) : '';
 }
@@ -76,7 +80,8 @@ function mba_homepage_cards( WP_Query $query, string $class = '' ): string {
 	$html = '<div class="mba-home-cards ' . esc_attr( $class ) . '">';
 	while ( $query->have_posts() ) {
 		$query->the_post();
-		$html .= '<article class="mba-card">';
+		$is_partner = 'mba_partner' === get_post_type();
+		$html .= '<article class="mba-card' . ( $is_partner ? ' mba-card--logo' : '' ) . '">';
 		$image_id = get_post_thumbnail_id();
 		if ( ! $image_id && 'mba_partner' === get_post_type() ) {
 			$image_id = (int) get_post_meta( get_the_ID(), 'mba_logo', true );
@@ -85,7 +90,16 @@ function mba_homepage_cards( WP_Query $query, string $class = '' ): string {
 			$image_id = (int) get_post_meta( get_the_ID(), 'mba_customer_photo', true );
 		}
 		if ( $image_id ) {
-			$html .= '<a href="' . esc_url( get_permalink() ) . '">' . wp_get_attachment_image( $image_id, 'large', false, array( 'loading' => 'lazy' ) ) . '</a>';
+			$html .= '<a href="' . esc_url( get_permalink() ) . '">' . wp_get_attachment_image(
+				$image_id,
+				$is_partner ? 'mba-logo' : 'mba-card',
+				false,
+				array(
+					'loading' => 'lazy',
+					'decoding' => 'async',
+					'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+				)
+			) . '</a>';
 		}
 		$html .= '<div class="mba-card__body"><h3><a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a></h3>' . ( has_excerpt() ? '<p>' . esc_html( get_the_excerpt() ) . '</p>' : '' ) . '</div></article>';
 	}

@@ -116,7 +116,7 @@ function mba_theme_render_site_header(): string {
 	$label = $label ? $label : __( 'Demander un devis', 'mba-menuiseries' );
 	return '<div class="mba-site-header"><div class="mba-header-inner"><a class="mba-brand" href="' . esc_url( home_url( '/' ) ) . '" aria-label="' . esc_attr( $name ) . '">' . ( $logo ? wp_get_attachment_image(
 		$logo,
-		'medium',
+		'mba-logo',
 		false,
 		array(
 			'class' => 'mba-company-logo',

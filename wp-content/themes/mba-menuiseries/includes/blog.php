@@ -5,7 +5,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function mba_theme_blog_card( WP_Post $post ): string {
 	$url = get_permalink( $post );
-	return '<article class="mba-card mba-blog-card">' . ( has_post_thumbnail( $post ) ? '<a href="' . esc_url( $url ) . '">' . get_the_post_thumbnail( $post, 'large', array( 'loading' => 'lazy' ) ) . '</a>' : '' ) . '<div class="mba-card__body"><p class="mba-card__meta">' . esc_html( get_the_date( '', $post ) ) . '</p><h2><a href="' . esc_url( $url ) . '">' . esc_html( get_the_title( $post ) ) . '</a></h2><p>' . esc_html( get_the_excerpt( $post ) ) . '</p></div></article>';
+	return '<article class="mba-card mba-blog-card">' . ( has_post_thumbnail( $post ) ? '<a href="' . esc_url( $url ) . '">' . get_the_post_thumbnail(
+		$post,
+		'mba-card',
+		array(
+			'loading' => 'lazy',
+			'decoding' => 'async',
+			'sizes' => '(max-width: 650px) 100vw, (max-width: 1023px) 50vw, 33vw',
+		)
+	) . '</a>' : '' ) . '<div class="mba-card__body"><p class="mba-card__meta">' . esc_html( get_the_date( '', $post ) ) . '</p><h2><a href="' . esc_url( $url ) . '">' . esc_html( get_the_title( $post ) ) . '</a></h2><p>' . esc_html( get_the_excerpt( $post ) ) . '</p></div></article>';
 }
 
 function mba_theme_render_blog_archive(): string {
@@ -47,7 +55,16 @@ function mba_theme_render_blog_article(): string {
 	if ( ! $post || 'post' !== $post->post_type ) {
 		return ''; }
 	$updated = get_the_modified_date( '', $post );
-	$html = '<main id="main" class="mba-blog-article"><article class="mba-section"><header><p class="mba-card__meta">' . esc_html( sprintf( __( 'Publié le %1$s · Mis à jour le %2$s · Par %3$s', 'mba-menuiseries' ), get_the_date( '', $post ), $updated, get_the_author_meta( 'display_name', (int) $post->post_author ) ) ) . '</p><h1>' . esc_html( get_the_title( $post ) ) . '</h1>' . ( has_post_thumbnail( $post ) ? get_the_post_thumbnail( $post, 'large', array( 'loading' => 'eager' ) ) : '' ) . '</header><div class="mba-article-content">' . apply_filters( 'the_content', $post->post_content ) . '</div></article>';
+	$html = '<main id="main" class="mba-blog-article"><article class="mba-section"><header><p class="mba-card__meta">' . esc_html( sprintf( __( 'Publié le %1$s · Mis à jour le %2$s · Par %3$s', 'mba-menuiseries' ), get_the_date( '', $post ), $updated, get_the_author_meta( 'display_name', (int) $post->post_author ) ) ) . '</p><h1>' . esc_html( get_the_title( $post ) ) . '</h1>' . ( has_post_thumbnail( $post ) ? get_the_post_thumbnail(
+		$post,
+		'mba-hero',
+		array(
+			'loading' => 'eager',
+			'fetchpriority' => 'high',
+			'decoding' => 'async',
+			'sizes' => '(max-width: 767px) 100vw, 66vw',
+		)
+	) : '' ) . '</header><div class="mba-article-content">' . apply_filters( 'the_content', $post->post_content ) . '</div></article>';
 	$related = get_posts(
 		array(
 			'post_type' => 'post',

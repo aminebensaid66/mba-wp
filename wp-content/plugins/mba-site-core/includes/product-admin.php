@@ -110,7 +110,7 @@ function mba_core_render_product_meta_box( WP_Post $post ): void {
 	?>
 	<div class="mba-product-fields">
 		<p class="description mba-guidance"><strong><?php esc_html_e( 'Required:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Use the core Product title to identify the item. All structured fields below are optional; publish only information that MBA has verified.', 'mba-site-core' ); ?></p>
-		<p class="description mba-guidance"><strong><?php esc_html_e( 'Photo guidance:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Cover: 4:3, at least 1600×1200 px. Gallery: JPEG/WebP, preferably 1600 px or wider and under 500 KB per image. Add accurate alt text and captions in the Media Library. Confirm publication consent before using client-property photos.', 'mba-site-core' ); ?></p>
+		<p class="description mba-guidance"><strong><?php esc_html_e( 'Photo guidance:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Use a landscape cover and clear gallery photos. Upload camera originals; WordPress creates responsive sizes and WebP copies where the server supports them. In the Media Library, add accurate alt text/captions and choose a crop focal point. Confirm publication consent before using client-property photos.', 'mba-site-core' ); ?></p>
 
 		<div class="mba-field">
 			<label for="mba_short_description"><strong><?php esc_html_e( 'Short description', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label>
@@ -456,7 +456,7 @@ function mba_core_featured_image_guidance( string $content, int $post_id ): stri
 	if ( 'mba_product' !== get_post_type( $post_id ) ) {
 		return $content;
 	}
-	$content .= '<p class="description">' . esc_html__( 'Recommended cover: 4:3, minimum 1600×1200 px, JPEG/WebP, target under 500 KB. Set meaningful alt text and confirm publication rights/consent.', 'mba-site-core' ) . '</p>';
+	$content .= '<p class="description">' . esc_html__( 'Choose a landscape cover. Upload the original; WordPress generates responsive sizes and WebP copies where supported. Add meaningful alt text and confirm publication rights/consent.', 'mba-site-core' ) . '</p>';
 	return $content;
 }
 add_filter( 'admin_post_thumbnail_html', 'mba_core_featured_image_guidance', 10, 2 );
