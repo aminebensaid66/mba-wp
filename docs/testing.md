@@ -41,6 +41,10 @@ The automated WebKit project is a Safari-engine check, not a run of Apple's Safa
 
 `bin/seed-sample-content.sh` creates only synthetic draft posts and marked original SVG illustrations; the end-to-end suite asserts the sample records stay unpublished and their media/relationships are preserved. See [`docs/sample-content/README.md`](sample-content/README.md) before using it, and never run it on staging or production. Approved content intake and rights are tracked in [`docs/client-input-required.md`](client-input-required.md); migration steps for metadata, media, relationship IDs, slugs, dates, and redirects are in [`docs/content-migration.md`](content-migration.md).
 
+## Owner handover and content editing (issue #29)
+
+[`docs/owner-guide.md`](owner-guide.md) follows the current wp-admin menus and field labels for MBA Settings, Products, Projects, FAQs, Testimonials, Partners, Posts, Pages, and the Media Library. The training checklist exercises these flows on staging or draft content; WordPress revisions cover post text, while host backups remain necessary for custom fields, relationships, media, and settings recovery.
+
 Runtime verification remains `./bin/smoke-wordpress.sh` from issue #1.
 
 ## What is intentionally excluded

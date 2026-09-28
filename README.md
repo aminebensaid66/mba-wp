@@ -71,6 +71,8 @@ Never add client claims, certifications, warranties, reviews, or technical value
 
 See [company settings API and Editor permissions](docs/company-settings.md) for global fields and template/block usage.
 
+For editorial workflows, image handling, approvals, and owner training, use [`docs/owner-guide.md`](docs/owner-guide.md).
+
 ## Useful commands
 
 ```bash
