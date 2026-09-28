@@ -4,7 +4,7 @@ This review records source-level fixes and the manual checks required on a popul
 
 ## Implemented and automated
 
-- A visible-on-focus French skip link is emitted before the header. Every theme page template and dynamic content block exposes one `main#main[tabindex="-1"]` destination.
+- WordPress core emits one visible-on-focus, site-language skip link before the header. Every theme page template and dynamic content block exposes one `main#main[tabindex="-1"]` destination.
 - Site navigation uses the WordPress Navigation block’s responsive overlay and keyboard behavior. All custom controls retain native links, buttons, inputs, selects, and form labels.
 - FAQs use native `details` and `summary`, so expanded state, keyboard operation, and no-JavaScript behavior stay aligned.
 - Project photos use a native modal `dialog`, a named close button, an accessible title and caption, explicit initial focus, Escape dismissal, and focus restoration to the invoking thumbnail.

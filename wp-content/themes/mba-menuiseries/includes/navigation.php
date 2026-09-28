@@ -9,12 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** Add a keyboard-first bypass link before the shared site header. */
-function mba_theme_render_skip_link(): void {
-	echo '<a class="mba-skip-link" href="#main">' . esc_html__( 'Passer au contenu principal', 'mba-menuiseries' ) . '</a>';
-}
-add_action( 'wp_body_open', 'mba_theme_render_skip_link' );
-
 /**
  * Register server-rendered theme blocks.
  */
