@@ -185,6 +185,9 @@ function mba_theme_render_site_footer(): string {
 			$html .= '<li><a href="' . esc_url( $url ) . '" rel="me">' . esc_html( $label ) . '</a></li>';
 		}
 	}
+	if ( function_exists( 'mba_core_analytics_measurement_id' ) && mba_core_analytics_measurement_id() ) {
+		$html .= '<li><button class="mba-consent-open" type="button" data-mba-consent-open>' . esc_html__( 'Paramètres de confidentialité', 'mba-menuiseries' ) . '</button></li>';
+	}
 	$html .= '</ul></div></div>';
 	return $html . mba_theme_render_mobile_conversion_actions();
 }

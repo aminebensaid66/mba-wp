@@ -724,6 +724,76 @@ fieldset.mba-quote-field {
 	display: none;
 }
 
+.mba-consent-open {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.mba-consent {
+	position: fixed;
+	z-index: 120;
+	inset-inline: 1rem;
+	inset-block-end: 1rem;
+	max-width: 48rem;
+	margin-inline: auto;
+	padding: 1rem;
+	border: 1px solid var(--mba-border);
+	background: var(--wp--preset--color--white, #fff);
+	box-shadow: var(--mba-shadow);
+}
+
+.mba-consent[hidden],
+.mba-consent [hidden] {
+	display: none;
+}
+
+.mba-consent h2 {
+	margin-block: 0 0.5rem;
+	font-size: 1.2rem;
+}
+
+.mba-consent__controls,
+.mba-consent__custom {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.mba-consent__custom {
+	margin-block-start: 0.75rem;
+}
+
+.mba-consent__button {
+	min-height: 44px;
+	padding: 0.55rem 0.75rem;
+	border: 1px solid var(--mba-border);
+	background: var(--wp--preset--color--white, #fff);
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.mba-consent__button:first-child {
+	background: var(--wp--preset--color--forest, #173f38);
+	color: var(--wp--preset--color--white, #fff);
+}
+
+@media (width < 768px) {
+	.mba-consent {
+		inset-block-end: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+	}
+
+	body:not(.has-mba-mobile-conversion) .mba-consent {
+		inset-block-end: max(1rem, env(safe-area-inset-bottom, 0px));
+	}
+}
+
 @media (width < 768px) {
 	body.has-mba-mobile-conversion {
 		padding-block-end: calc(5.25rem + env(safe-area-inset-bottom, 0px));

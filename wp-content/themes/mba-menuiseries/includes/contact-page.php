@@ -56,7 +56,7 @@ function mba_theme_render_contact_page(): string {
 	if ( $directions || $embed ) {
 		$html .= '<section class="mba-contact-map-section" aria-labelledby="mba-contact-map-heading"><h2 id="mba-contact-map-heading">' . esc_html__( 'Nous trouver', 'mba-menuiseries' ) . '</h2>';
 		if ( $directions ) {
-			$html .= '<p><a class="wp-element-button" href="' . esc_url( $directions ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Ouvrir l’itinéraire', 'mba-menuiseries' ) . '</a></p>'; }
+			$html .= '<p><a class="wp-element-button" href="' . esc_url( $directions ) . '" target="_blank" rel="noopener noreferrer" data-mba-analytics-event="directions_click">' . esc_html__( 'Ouvrir l’itinéraire', 'mba-menuiseries' ) . '</a></p>'; }
 		if ( $embed ) {
 			$html .= '<div class="mba-consent-map" data-consent-map data-map-src="' . esc_url( $embed ) . '"><p>' . esc_html__( 'La carte Google Maps ne se charge qu’après votre accord.', 'mba-menuiseries' ) . '</p><button type="button" class="wp-element-button" data-map-consent-trigger>' . esc_html__( 'Autoriser et charger la carte', 'mba-menuiseries' ) . '</button></div>'; }
 		$html .= '</section>';
