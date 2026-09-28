@@ -127,7 +127,7 @@ function mba_theme_render_homepage(): string {
 	$company = (string) mba_homepage_setting( 'mba_legal_name' );
 	$quote_label = (string) mba_homepage_setting( 'mba_quote_cta_label' );
 	$quote_label = $quote_label ? $quote_label : __( 'Demander un devis', 'mba-menuiseries' );
-	$html = '<main id="main" class="mba-homepage">';
+	$html = '<main id="main" tabindex="-1" class="mba-homepage">';
 	$html .= '<section class="mba-home-hero mba-section" aria-labelledby="mba-home-heading">';
 	$hero = mba_homepage_image( 'mba_homepage_hero_image_id', $heading, 'mba-home-hero-image' );
 	$html .= $hero ? '<div class="mba-home-hero__media">' . $hero . '</div>' : '';

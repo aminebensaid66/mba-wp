@@ -20,7 +20,7 @@ function mba_theme_contact_detail( string $key, string $label ): string {
 
 function mba_theme_render_contact_page(): string {
 	wp_enqueue_script( 'mba-contact-map', get_theme_file_uri( 'assets/js/contact-map.js' ), array(), '0.1.0', true );
-	$html = '<main id="main" class="mba-contact"><section class="mba-section" aria-labelledby="mba-contact-title"><h1 id="mba-contact-title">' . esc_html__( 'Contact', 'mba-menuiseries' ) . '</h1>';
+	$html = '<main id="main" tabindex="-1" class="mba-contact"><section class="mba-section" aria-labelledby="mba-contact-title"><h1 id="mba-contact-title">' . esc_html__( 'Contact', 'mba-menuiseries' ) . '</h1>';
 	$description = (string) mba_theme_setting( 'mba_description' );
 	if ( $description ) {
 		$html .= '<p class="mba-lede">' . nl2br( esc_html( $description ) ) . '</p>'; }

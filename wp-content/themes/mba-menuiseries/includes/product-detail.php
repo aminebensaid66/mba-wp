@@ -77,7 +77,7 @@ function mba_theme_render_product_detail(): string {
 	}
 	$id = (int) $product->ID;
 	$title = get_the_title( $product );
-	$html = '<main id="main" class="mba-product-detail"><section class="mba-product-hero mba-section" aria-labelledby="mba-product-title">' . ( has_post_thumbnail( $product ) ? '<div class="mba-product-hero__media">' . get_the_post_thumbnail(
+	$html = '<main id="main" tabindex="-1" class="mba-product-detail"><section class="mba-product-hero mba-section" aria-labelledby="mba-product-title">' . ( has_post_thumbnail( $product ) ? '<div class="mba-product-hero__media">' . get_the_post_thumbnail(
 		$product,
 		'mba-hero',
 		array(

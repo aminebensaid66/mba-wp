@@ -30,7 +30,7 @@ function mba_project_detail_gallery( int $project_id, string $key, string $label
 			continue; }
 		$caption = wp_get_attachment_caption( $image_id );
 		$alt = get_post_meta( $image_id, '_wp_attachment_image_alt', true );
-		$alt = $alt ? $alt : sprintf( __( '%s photo for project', 'mba-menuiseries' ), $label );
+		$alt = $alt ? $alt : sprintf( __( 'Photo %s du projet', 'mba-menuiseries' ), $label );
 		$thumb = wp_get_attachment_image(
 			$image_id,
 			'mba-gallery',
@@ -44,7 +44,7 @@ function mba_project_detail_gallery( int $project_id, string $key, string $label
 		);
 		if ( ! $thumb ) {
 			continue; }
-		$html .= '<figure role="listitem"><button type="button" class="mba-project-gallery__trigger" data-lightbox-open data-full-src="' . esc_url( $full ) . '" data-caption="' . esc_attr( $caption ) . '" data-alt="' . esc_attr( $alt ) . '" aria-label="' . esc_attr( sprintf( __( 'Open %s photo', 'mba-menuiseries' ), $label ) ) . '">' . $thumb . '</button>' . ( $caption ? '<figcaption>' . esc_html( $caption ) . '</figcaption>' : '' ) . '</figure>';
+		$html .= '<figure role="listitem"><button type="button" class="mba-project-gallery__trigger" data-lightbox-open data-full-src="' . esc_url( $full ) . '" data-caption="' . esc_attr( $caption ) . '" data-alt="' . esc_attr( $alt ) . '" aria-label="' . esc_attr( sprintf( __( 'Ouvrir la photo : %s', 'mba-menuiseries' ), $label ) ) . '">' . $thumb . '</button>' . ( $caption ? '<figcaption>' . esc_html( $caption ) . '</figcaption>' : '' ) . '</figure>';
 	}
 	return $html . '</div></section>';
 }
@@ -107,7 +107,7 @@ function mba_theme_render_project_detail(): string {
 		)
 	) . '</div>' : '';
 	$meta = array_filter( array( $location, $year ) );
-	$html = '<main id="main" class="mba-project-detail"><section class="mba-project-hero mba-section" aria-labelledby="mba-project-title">' . $hero . '<div><p class="mba-eyebrow">' . esc_html__( 'Réalisation', 'mba-menuiseries' ) . '</p><h1 id="mba-project-title">' . esc_html( get_the_title( $project ) ) . '</h1>' . ( $meta ? '<p class="mba-card__meta">' . esc_html( implode( ' · ', $meta ) ) . '</p>' : '' ) . '</div></section>';
+	$html = '<main id="main" tabindex="-1" class="mba-project-detail"><section class="mba-project-hero mba-section" aria-labelledby="mba-project-title">' . $hero . '<div><p class="mba-eyebrow">' . esc_html__( 'Réalisation', 'mba-menuiseries' ) . '</p><h1 id="mba-project-title">' . esc_html( get_the_title( $project ) ) . '</h1>' . ( $meta ? '<p class="mba-card__meta">' . esc_html( implode( ' · ', $meta ) ) . '</p>' : '' ) . '</div></section>';
 	foreach ( array(
 		'mba_challenge' => __( 'Le défi', 'mba-menuiseries' ),
 		'mba_solution' => __( 'La solution', 'mba-menuiseries' ),
@@ -142,5 +142,5 @@ function mba_theme_render_project_detail(): string {
 		),
 		home_url( '/devis/' )
 	);
-	return $html . '<section class="mba-section mba-home-final-cta" aria-labelledby="mba-project-cta-heading"><h2 id="mba-project-cta-heading">' . esc_html__( 'Un projet similaire en tête ?', 'mba-menuiseries' ) . '</h2><a class="wp-element-button" href="' . esc_url( $quote_url ) . '">' . esc_html__( 'Demander un devis', 'mba-menuiseries' ) . '</a></section><dialog class="mba-lightbox" data-lightbox-dialog aria-labelledby="mba-lightbox-title"><button type="button" class="mba-lightbox__close" data-lightbox-close aria-label="' . esc_attr__( 'Close photo', 'mba-menuiseries' ) . '">×</button><h2 id="mba-lightbox-title" class="screen-reader-text">' . esc_html__( 'Project photo', 'mba-menuiseries' ) . '</h2><img data-lightbox-image alt=""><p data-lightbox-caption></p></dialog></main>';
+	return $html . '<section class="mba-section mba-home-final-cta" aria-labelledby="mba-project-cta-heading"><h2 id="mba-project-cta-heading">' . esc_html__( 'Un projet similaire en tête ?', 'mba-menuiseries' ) . '</h2><a class="wp-element-button" href="' . esc_url( $quote_url ) . '">' . esc_html__( 'Demander un devis', 'mba-menuiseries' ) . '</a></section><dialog class="mba-lightbox" data-lightbox-dialog aria-labelledby="mba-lightbox-title" aria-describedby="mba-lightbox-caption"><button type="button" class="mba-lightbox__close" data-lightbox-close aria-label="' . esc_attr__( 'Fermer la photo', 'mba-menuiseries' ) . '">×</button><h2 id="mba-lightbox-title" class="screen-reader-text">' . esc_html__( 'Photo du projet', 'mba-menuiseries' ) . '</h2><img data-lightbox-image alt=""><p id="mba-lightbox-caption" data-lightbox-caption></p></dialog></main>';
 }

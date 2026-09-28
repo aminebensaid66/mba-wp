@@ -19,6 +19,21 @@ body {
 	font-size: 1rem;
 }
 
+.mba-skip-link {
+	position: fixed;
+	z-index: 1000;
+	inset-block-start: 1rem;
+	inset-inline-start: 1rem;
+	padding: 0.75rem 1rem;
+	transform: translateY(calc(-100% - 1rem));
+	background: var(--wp--preset--color--ink, #14201f);
+	color: var(--wp--preset--color--white, #fff);
+}
+
+.mba-skip-link:focus {
+	transform: translateY(0);
+}
+
 img,
 video,
 svg {
@@ -39,8 +54,9 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 [tabindex]:focus-visible {
-	outline: var(--wp--custom--focus--width, 3px) solid var(--mba-focus);
+	outline: var(--wp--custom--focus--width, 3px) solid var(--wp--preset--color--white, #fff);
 	outline-offset: var(--wp--custom--focus--offset, 3px);
+	box-shadow: 0 0 0 6px var(--mba-focus);
 }
 
 .wp-site-blocks {
@@ -602,23 +618,18 @@ body.admin-bar {
 	padding-block: 0.5rem;
 }
 
-.mba-faq-item button {
+.mba-faq-item summary {
+	display: list-item;
 	width: 100%;
 	padding: 1rem 0;
-	border: 0;
-	background: transparent;
 	font: inherit;
 	font-weight: 650;
 	text-align: left;
 	cursor: pointer;
 }
 
-.mba-faq-item [role='region'] {
+.mba-faq-item > div {
 	padding: 0 0 1rem;
-}
-
-.has-mba-faq-js .mba-faq-item [role='region'][hidden] {
-	display: none;
 }
 
 .mba-quote-form {
