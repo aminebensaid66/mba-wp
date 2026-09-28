@@ -1,0 +1,9 @@
+services:
+  wordpress:
+    volumes:
+      - ./tests/e2e/wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ./tests/e2e/fixtures:/var/www/html/wp-content/mba-e2e:ro
+
+  cli:
+    volumes:
+      - ./tests/e2e/fixtures:/var/www/html/wp-content/mba-e2e:ro

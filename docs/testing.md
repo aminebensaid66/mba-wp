@@ -29,6 +29,14 @@ cp .env.example .env
 docker compose config --quiet
 ```
 
+## Cross-browser end-to-end suite (issue #27)
+
+`npm run test:e2e` creates a dedicated `mba_wp_e2e` Docker Compose project on port 18081 with fresh database/media volumes, installs the theme/plugin, and seeds synthetic products/pages. Playwright exercises critical public routes, same-site links, mobile navigation, form validation, quote/contact success and failure states, duplicate submission, spam, invalid uploads, and horizontal overflow at 360, 390, 430, 768, 1024, and 1440 px. Chromium, Firefox, and WebKit run locally; CI also installs and runs branded Microsoft Edge. Mail is intercepted only by a test-only MU plugin that is mounted only in this disposable test stack. Its volumes are removed after the run; the developer `.env` and normal local WordPress database/media are not used.
+
+Install Node.js 22+, Docker Compose v2, and the browser binaries once with `npx playwright install chromium firefox webkit`, then run `npm run test:e2e`. To include branded Edge locally, install it with `npx playwright install msedge` and run with `E2E_INCLUDE_EDGE=1`. A failed run retains the Playwright report long enough for the shell to upload it in CI; CI attaches the HTML report as a 14-day workflow artifact. The test suite runs on pull requests and pushes to `main`.
+
+The automated WebKit project is a Safari-engine check, not a run of Apple's Safari application; branded Edge is installed in CI, while Chromium covers the open-source Chrome/Chromium engine locally. Manual release sign-off should still record the actual Safari and target-device/OS versions used. Production SMTP delivery, external email-provider outage monitoring, and real human/bot behavior remain deployment/manual checks; tests substitute mail in the isolated stack and never send real messages.
+
 Runtime verification remains `./bin/smoke-wordpress.sh` from issue #1.
 
 ## What is intentionally excluded

@@ -2,7 +2,7 @@ import js from '@eslint/js';
 
 export default [
   {
-    ignores: ['vendor/**', 'node_modules/**', 'wordpress/**', 'wp-content/uploads/**']
+    ignores: ['vendor/**', 'node_modules/**', 'wordpress/**', 'wp-content/uploads/**', 'playwright-report/**', 'test-results/**']
   },
   js.configs.recommended,
   {
