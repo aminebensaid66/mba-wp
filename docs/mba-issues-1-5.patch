@@ -1,0 +1,2490 @@
+diff --git a/.env.example b/.env.example
+index 40c540b75f9ef2962fc055a457f8747531b35e20..a6ecf9e2e20956f3b96df0a2bb577ec0393ad390 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,3 +1,4 @@
++# Local-only development values. Copy to .env and change passwords before first use.
+ COMPOSE_PROJECT_NAME=mba_wp
+ WORDPRESS_PORT=8080
+ DB_NAME=mba_wordpress
+@@ -5,4 +6,8 @@ DB_USER=mba_wordpress
+ DB_PASSWORD=change-this-local-password
+ DB_ROOT_PASSWORD=change-this-local-root-password
+ WP_DEBUG=true
+-
++WP_SITE_URL=http://localhost:8080
++WP_SITE_TITLE=MBA Menuiseries Local
++WP_ADMIN_USER=mba_admin
++WP_ADMIN_PASSWORD=change-this-local-admin-password
++WP_ADMIN_EMAIL=developer@example.test
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..348b30ee61f5787daa6410ec8dee5f3835af3547
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,79 @@
++name: CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++
++permissions:
++  contents: read
++
++jobs:
++  quality:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: shivammathur/setup-php@v2
++        with:
++          php-version: '8.3'
++          tools: composer:v2
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++      - name: Cache Composer and npm downloads
++        uses: actions/cache@v4
++        with:
++          path: |
++            ~/.cache/composer/files
++            ~/.npm
++          key: ${{ runner.os }}-quality-${{ hashFiles('composer.json', 'package.json') }}
++          restore-keys: |
++            ${{ runner.os }}-quality-
++      - name: Validate Composer metadata
++        run: composer validate --no-check-lock
++      - name: Install PHP quality tools
++        run: composer install --no-interaction --no-progress --prefer-dist
++      - name: PHP syntax, standards, static analysis, and tests
++        run: composer check
++      - name: Install JS/CSS quality tools
++        run: npm install --no-audit --no-fund
++      - name: JavaScript/CSS lint and JSON/YAML validation
++        run: npm run check
++      - name: Validate Docker Compose
++        run: docker compose config --quiet
++      - name: Prove PHP syntax gate rejects invalid PHP
++        run: |
++          printf '<?php syntax error' >/tmp/mba-invalid.php
++          if php -l /tmp/mba-invalid.php >/dev/null 2>&1; then
++            echo 'Expected invalid PHP syntax to fail.' >&2
++            exit 1
++          fi
++
++  wordpress-smoke:
++    runs-on: ubuntu-latest
++    needs: quality
++    env:
++      COMPOSE_PROJECT_NAME: mba_wp_ci
++      WORDPRESS_PORT: 8080
++      DB_NAME: mba_wordpress
++      DB_USER: mba_wordpress
++      DB_PASSWORD: ci-local-password
++      DB_ROOT_PASSWORD: ci-local-root-password
++      WP_DEBUG: 'true'
++      WP_SITE_URL: http://localhost:8080
++      WP_SITE_TITLE: MBA CI
++      WP_ADMIN_USER: mba_admin
++      WP_ADMIN_PASSWORD: ci-local-admin-password
++      WP_ADMIN_EMAIL: ci@example.test
++    steps:
++      - uses: actions/checkout@v4
++      - name: Write CI environment
++        run: env | grep -E '^(COMPOSE_PROJECT_NAME|WORDPRESS_PORT|DB_|WP_)' > .env
++      - name: Clean install, activation, media, restart, persistence
++        run: ./bin/smoke-wordpress.sh
++      - name: WordPress logs
++        if: failure()
++        run: docker compose logs --no-color wordpress database || true
++      - name: Tear down
++        if: always()
++        run: docker compose down --volumes --remove-orphans || true
+diff --git a/.stylelintrc.json b/.stylelintrc.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..62604b89059968d1aec21a3b752c60c3e4284aa6
+--- /dev/null
++++ b/.stylelintrc.json
+@@ -0,0 +1,7 @@
++{
++  "extends": ["stylelint-config-standard"],
++  "rules": {
++    "selector-class-pattern": null,
++    "custom-property-pattern": null
++  }
++}
+diff --git a/README.md b/README.md
+index d11ecffca3c9e808658bf1bc1dcb2ef1c9bf59ca..50d14ff9e7424ead81a0e9c827d16696a6b304a1 100644
+--- a/README.md
++++ b/README.md
+@@ -4,57 +4,72 @@ WordPress website for MBA Menuiseries Belhaj Ali, built as a maintainable produc
+ 
+ ## Architecture
+ 
+-- `wp-content/themes/mba-menuiseries`: custom native block theme
+-- `wp-content/plugins/mba-site-core`: products, projects, FAQs, testimonials, partners, taxonomies, and global company settings
+-- `PROJECT.md`: authoritative functional specification
+-- `MBA_MENUISERIES_WEBSITE_SPEC.md`: market research and business requirements
+-- `AI_DEVELOPMENT_PROMPT.md`: agent implementation workflow
++- `wp-content/themes/mba-menuiseries`: custom native block theme and visual tokens/patterns.
++- `wp-content/plugins/mba-site-core`: durable content types, product fields, relationships, validation, launch checks, and global company settings.
++- `PROJECT.md`: authoritative functional specification.
++- `MBA_MENUISERIES_WEBSITE_SPEC.md`: market research and business requirements.
++- `docs/architecture.md`: runtime and ownership decisions.
+ 
+-Business content is stored independently of the theme. The owner can replace photos, edit product details, publish projects, and change contact information from WordPress without modifying templates.
++Business content is stored independently of the theme. The owner can replace cover/gallery photos, reorder galleries, edit product details, relate FAQs/projects, and change business data without editing templates.
+ 
+-## Local setup
++## Local requirements
+ 
+-Requirements: Docker Desktop and Docker Compose.
++- Docker Desktop or Docker Engine with Compose v2.
++- Git.
++- Optional quality tooling: PHP 8.1+, Composer 2, Node.js 22+ and npm.
++
++Pinned local runtime: WordPress 7.1.0 + PHP 8.3, MariaDB 11.4.13, WP-CLI 2.12.0 + PHP 8.3.
++
++## One-command install
+ 
+ ```bash
+ cp .env.example .env
+-docker compose up -d
++# Review/change local-only passwords and site/admin values.
++./bin/setup.sh
+ ```
+ 
+-Open <http://localhost:8080> and complete the WordPress installation. Then activate:
+-
+-1. **MBA Site Core** plugin
+-2. **MBA Menuiseries** theme
++Open the `WP_SITE_URL` from `.env` (default `http://localhost:8080`). The helper starts the stack, installs WordPress if needed, and activates **MBA Site Core** plus **MBA Menuiseries**.
+ 
+-Optional WP-CLI usage:
++To destroy the local database and uploaded media and rebuild from scratch:
+ 
+ ```bash
+-docker compose --profile tools run --rm cli wp plugin activate mba-site-core
+-docker compose --profile tools run --rm cli wp theme activate mba-menuiseries
++./bin/reset.sh --yes
+ ```
+ 
+-## Content editing
++The explicit flag prevents accidental deletion.
++
++## Persistence
++
++`database_data` stores the database and `wordpress_data` stores the generated WordPress tree/uploads. `docker compose down` keeps both; `docker compose down --volumes` or `./bin/reset.sh --yes` deletes them. Theme/plugin source is bind-mounted from this repository and should remain owned by your normal host user. WP-CLI uses the container's `www-data` UID/GID for the shared WordPress volume.
++
++## Product editing
+ 
+-- Products and their featured photos: **Products**
+-- Completed work and galleries: **Projects**
+-- Frequently asked questions: **FAQs**
+-- Reviews: **Testimonials**
+-- Suppliers/certifications: **Partners**
+-- Phone, WhatsApp, email, address, opening hours, and social links: **MBA Settings**
+-- Normal pages and advice articles: native WordPress editor
++Products expose structured fields for short description, benefits, configurations, materials/profiles, glazing, finishes (with optional images), verified performance rows, applications, maintenance, reorderable gallery, PDF document, featured/order controls, related FAQs, and related projects. Cover images use the normal WordPress Featured Image control. The editor includes ratio/dimension/format/size/alt-text/consent guidance; optional fields may remain empty.
+ 
+-Never add client claims, certifications, warranties, reviews, or technical values until MBA confirms them.
++Never add client claims, certifications, warranties, reviews, prices, technical values, or performance figures until MBA confirms them. Performance rows are deliberately optional.
++
++## Quality checks
++
++Fast checks that require only PHP:
++
++```bash
++./bin/lint-php.sh
++php tests/php/run.php
++```
+ 
+-## Useful commands
++Full local equivalents of CI:
+ 
+ ```bash
+-docker compose up -d
+-docker compose logs -f wordpress
+-docker compose down
++composer install
++composer check
++npm install
++npm run check
+ docker compose config --quiet
++./bin/smoke-wordpress.sh
+ ```
+ 
+-## Status
++CI runs on pull requests and pushes to `main`. See `docs/testing.md` and `docs/branch-protection.md`.
+ 
+-This first commit provides the development environment, editable content foundation, and block-theme shell. Feature delivery is tracked through GitHub issues.
++## Sample media
+ 
++No ALUMED photography is bundled or hotlinked in this batch. If the approved temporary ALUMED permission is used later, record every file and exact source URL in `docs/sample-media-sources.md`; Site Health warns while content/media remains marked temporary.
+diff --git a/bin/lint-php.sh b/bin/lint-php.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..5a44162954040f29ef0173baceb50b378ddf0536
+--- /dev/null
++++ b/bin/lint-php.sh
+@@ -0,0 +1,9 @@
++#!/usr/bin/env bash
++set -euo pipefail
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++mapfile -t files < <(find wp-content bin tests -type f -name '*.php' -print | sort)
++for file in "${files[@]}"; do
++  php -l "$file" >/dev/null
++done
++printf 'PHP syntax OK (%d files)\n' "${#files[@]}"
+diff --git a/bin/reset.sh b/bin/reset.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..97ec236834953c08d497c3f6ff562a70f10c62da
+--- /dev/null
++++ b/bin/reset.sh
+@@ -0,0 +1,19 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++
++if [[ "${1:-}" != "--yes" ]]; then
++  echo "Refusing to delete local database and media volumes without --yes." >&2
++  echo "Usage: ./bin/reset.sh --yes" >&2
++  exit 2
++fi
++
++if ! command -v docker >/dev/null 2>&1; then
++  echo "Docker is required." >&2
++  exit 1
++fi
++
++docker compose down --volumes --remove-orphans
++./bin/setup.sh
+diff --git a/bin/setup.sh b/bin/setup.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..d33fd20a329dca41e3b09d6c5850b7830a511476
+--- /dev/null
++++ b/bin/setup.sh
+@@ -0,0 +1,67 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++
++if ! command -v docker >/dev/null 2>&1; then
++  echo "Docker is required. Install Docker Desktop/Engine with Compose v2." >&2
++  exit 1
++fi
++
++if [[ ! -f .env ]]; then
++  cp .env.example .env
++  echo "Created .env from .env.example. Local placeholder credentials are for development only."
++fi
++
++env_value() {
++  local key="$1"
++  local line
++  line="$(grep -E "^${key}=" .env | tail -n 1 || true)"
++  printf '%s' "${line#*=}"
++}
++
++WP_SITE_URL="${WP_SITE_URL:-$(env_value WP_SITE_URL)}"
++WP_SITE_TITLE="${WP_SITE_TITLE:-$(env_value WP_SITE_TITLE)}"
++WP_ADMIN_USER="${WP_ADMIN_USER:-$(env_value WP_ADMIN_USER)}"
++WP_ADMIN_PASSWORD="${WP_ADMIN_PASSWORD:-$(env_value WP_ADMIN_PASSWORD)}"
++WP_ADMIN_EMAIL="${WP_ADMIN_EMAIL:-$(env_value WP_ADMIN_EMAIL)}"
++
++: "${WP_SITE_URL:?WP_SITE_URL is required in .env}"
++: "${WP_SITE_TITLE:?WP_SITE_TITLE is required in .env}"
++: "${WP_ADMIN_USER:?WP_ADMIN_USER is required in .env}"
++: "${WP_ADMIN_PASSWORD:?WP_ADMIN_PASSWORD is required in .env}"
++: "${WP_ADMIN_EMAIL:?WP_ADMIN_EMAIL is required in .env}"
++
++docker compose up -d database wordpress
++
++wp_cli() {
++  docker compose --profile tools run --rm cli wp "$@" --allow-root
++}
++
++for attempt in {1..30}; do
++  if wp_cli core version >/dev/null 2>&1; then
++    break
++  fi
++  if [[ "$attempt" -eq 30 ]]; then
++    echo "WordPress files were not ready after repeated checks." >&2
++    exit 1
++  fi
++  sleep 2
++done
++
++if ! wp_cli core is-installed >/dev/null 2>&1; then
++  wp_cli core install \
++    --url="$WP_SITE_URL" \
++    --title="$WP_SITE_TITLE" \
++    --admin_user="$WP_ADMIN_USER" \
++    --admin_password="$WP_ADMIN_PASSWORD" \
++    --admin_email="$WP_ADMIN_EMAIL" \
++    --skip-email
++fi
++
++wp_cli plugin activate mba-site-core
++wp_cli theme activate mba-menuiseries
++wp_cli rewrite flush --hard
++
++echo "MBA WordPress is ready at $WP_SITE_URL"
+diff --git a/bin/smoke-wordpress.sh b/bin/smoke-wordpress.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..b5eb8f39731b37a471de2c99f1ab1fab6621911e
+--- /dev/null
++++ b/bin/smoke-wordpress.sh
+@@ -0,0 +1,31 @@
++#!/usr/bin/env bash
++set -euo pipefail
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++cd "$ROOT_DIR"
++
++./bin/setup.sh
++wp_cli() { docker compose --profile tools run --rm cli wp "$@" --allow-root; }
++
++wp_cli plugin is-active mba-site-core
++wp_cli theme is-active mba-menuiseries
++
++product_id="$(wp_cli post create --post_type=mba_product --post_title='Persistence Test Product' --post_status=publish --porcelain)"
++wp_cli post meta update "$product_id" mba_short_description 'Temporary CI product used for persistence verification.' >/dev/null
++
++# Generate a tiny PNG inside the transient CLI container; no binary fixture is committed.
++attachment_id="$(docker compose --profile tools run --rm cli sh -lc 'printf iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII= | base64 -d >/tmp/mba-ci.png; wp media import /tmp/mba-ci.png --post_id='"$product_id"' --featured_image --porcelain --allow-root')"
++
++docker compose restart database wordpress >/dev/null
++sleep 5
++
++wp_cli post get "$product_id" --field=post_title | grep -F 'Persistence Test Product' >/dev/null
++wp_cli post meta get "$product_id" _thumbnail_id | grep -F "$attachment_id" >/dev/null
++
++inactive_theme="$(wp_cli theme list --status=inactive --field=name | head -n 1 || true)"
++if [[ -n "$inactive_theme" ]]; then
++  wp_cli theme activate "$inactive_theme" >/dev/null
++  wp_cli eval 'if (! post_type_exists("mba_product")) { fwrite(STDERR, "mba_product missing\n"); exit(1); }' >/dev/null
++  wp_cli theme activate mba-menuiseries >/dev/null
++fi
++
++echo "WordPress smoke/persistence checks passed. Product $product_id, attachment $attachment_id."
+diff --git a/composer.json b/composer.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4e894ee582331cbe755bb0a8d8c9d3d006a6c0b
+--- /dev/null
++++ b/composer.json
+@@ -0,0 +1,24 @@
++{
++  "name": "mba-menuiseries/wordpress-site",
++  "description": "Development quality tooling for the MBA Menuiseries WordPress site.",
++  "type": "project",
++  "require-dev": {
++    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
++    "phpstan/phpstan": "^2.1",
++    "szepeviktor/phpstan-wordpress": "^2.0",
++    "wp-coding-standards/wpcs": "^3.2"
++  },
++  "scripts": {
++    "lint:php": "bash bin/lint-php.sh",
++    "lint:phpcs": "phpcs -q",
++    "analyse": "phpstan analyse --no-progress",
++    "test": "php tests/php/run.php",
++    "check": ["@lint:php", "@lint:phpcs", "@analyse", "@test"]
++  },
++  "config": {
++    "allow-plugins": {
++      "dealerdirect/phpcodesniffer-composer-installer": true
++    },
++    "sort-packages": true
++  }
++}
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 7b369cc3c0b1f744526b5921b50c686d90328857..b961b9e0fcb399242b0809941cdc38d3a1b2805e 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   database:
+-    image: mariadb:11.4
++    image: mariadb:11.4.13
+     restart: unless-stopped
+     environment:
+       MARIADB_DATABASE: ${DB_NAME:-mba_wordpress}
+@@ -11,12 +11,12 @@ services:
+       - database_data:/var/lib/mysql
+     healthcheck:
+       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+-      interval: 10s
++      interval: 5s
+       timeout: 5s
+-      retries: 10
++      retries: 20
+ 
+   wordpress:
+-    image: wordpress:php8.3-apache
++    image: wordpress:7.1.0-php8.3-apache
+     restart: unless-stopped
+     depends_on:
+       database:
+@@ -32,13 +32,14 @@ services:
+       WORDPRESS_CONFIG_EXTRA: |
+         define('WP_ENVIRONMENT_TYPE', 'local');
+         define('DISALLOW_FILE_EDIT', true);
++        define('WP_DEBUG_LOG', true);
+     volumes:
+       - wordpress_data:/var/www/html
+       - ./wp-content/themes/mba-menuiseries:/var/www/html/wp-content/themes/mba-menuiseries
+       - ./wp-content/plugins/mba-site-core:/var/www/html/wp-content/plugins/mba-site-core
+ 
+   cli:
+-    image: wordpress:cli-php8.3
++    image: wordpress:cli-2.12.0-php8.3
+     profiles: ["tools"]
+     depends_on:
+       database:
+@@ -57,4 +58,3 @@ services:
+ volumes:
+   database_data:
+   wordpress_data:
+-
+diff --git a/docs/architecture.md b/docs/architecture.md
+index a71f0d7e106b8b2f4c27ba0ec02f4a40efa57828..f7791fccd05175653d68f26f10ff30f0b045e140 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -2,29 +2,49 @@
+ 
+ ## Decision
+ 
+-The project starts with the official Docker WordPress image, a custom block theme, and a site-functionality plugin.
++The project uses the official WordPress Docker image, a custom native block theme, and a site-functionality plugin. The local stack is pinned to WordPress 7.1.0 on PHP 8.3, WordPress CLI 2.12.0 on PHP 8.3, and MariaDB 11.4.13. Production hosting remains to be confirmed; this Compose file is development infrastructure, not a production deployment recipe.
+ 
+-This structure was selected because it:
++This structure:
+ 
+-- runs locally without requiring PHP or Composer on the host;
+-- uses WordPress's native editing experience;
+-- keeps business content available if the visual theme changes;
++- provides a reproducible local environment with one-command install/reset helpers;
++- uses WordPress's native block editing experience;
++- keeps business content and media relationships available if the visual theme changes;
+ - avoids page-builder lock-in;
+-- gives the owner structured places to update photos and details.
+-
+-Production hosting and deployment automation remain to be confirmed. The Docker configuration is for development and must not be treated as production infrastructure.
++- gives the owner structured, validated places to update photos and product details.
+ 
+ ## Ownership boundaries
+ 
+-### Theme
++### Theme: `mba-menuiseries`
++
++Presentation only: templates, patterns, design tokens, responsive layout primitives, navigation presentation, and reusable visual treatments. Theme changes must not define or delete business content types/fields.
++
++### Site Core plugin: `mba-site-core`
+ 
+-The theme owns presentation: templates, patterns, styles, navigation presentation, and reusable visual components.
++Durable business behavior: post types, taxonomies, metadata, validation, bidirectional relationships, admin editing UI, global settings, launch checks, and later form behavior. Products/projects remain registered when a different theme is activated.
+ 
+-### Site Core plugin
++### Responsive design baseline
+ 
+-The plugin owns durable business data: content types, taxonomies, metadata, validation, relationships, global settings, and future form integration.
++The theme is mobile-first: 360 px and 390 px use the single-column baseline; 430 px enables two-column primitives where appropriate; 768 px introduces split/three-column layouts; 1024 px enables four-column grids; and 1440 px increases section breathing room within the 1240 px wide-content limit. Components use fluid type/spacing and avoid fixed content heights so 200% text zoom can reflow instead of clipping.
+ 
+ ### Media
+ 
+-WordPress Media Library stores originals. Templates use featured images and galleries chosen by editors. Future media work must add upload guidance, responsive formats, crop rules, and performance safeguards without preventing the owner from replacing photographs.
++WordPress Media Library owns images/documents. Product cover images use the core featured-image field; galleries store attachment IDs in editor-defined order; finish swatches may reference image attachments; technical documents store a validated PDF attachment ID. Templates must tolerate missing media and use normal WordPress responsive image APIs so portrait and landscape owner uploads can be cropped/presented safely.
++
++No ALUMED images are bundled in this batch. `docs/sample-media-sources.md` defines provenance rules and the plugin exposes a Site Health launch check for any content marked temporary.
++
++## Persistence and ownership
++
++Compose uses two named volumes:
++
++- `database_data`: MariaDB data, including all posts/meta/settings.
++- `wordpress_data`: the generated WordPress installation and uploads.
++
++The custom theme/plugin directories are bind-mounted from the repository. `docker compose down` preserves named volumes; `./bin/reset.sh --yes` intentionally deletes them. The CLI service runs as UID/GID 33 (`www-data`) to avoid creating root-owned WordPress files in the shared volume.
++
++## Supported runtime
++
++- Local reference runtime: WordPress 7.1.0, PHP 8.3, MariaDB 11.4.13.
++- Custom PHP compatibility floor: PHP 8.1.
++- Plugin WordPress floor: WordPress 7.0.
+ 
++Production should run a currently supported WordPress security release and PHP version after staging verification; version changes must be reviewed as explicit dependency updates rather than silently floating Docker tags.
+diff --git a/docs/branch-protection.md b/docs/branch-protection.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6a6c7fbb14aabfc0f5a79349211007bbaa8463b
+--- /dev/null
++++ b/docs/branch-protection.md
+@@ -0,0 +1,12 @@
++# Branch protection recommendation
++
++Configure the `main` branch in GitHub after the CI workflow has run successfully at least once:
++
++- require a pull request before merging;
++- require at least one approving review;
++- require the `quality` and `wordpress-smoke` status checks;
++- require branches to be up to date before merging;
++- block force pushes and branch deletion;
++- keep administrator bypass limited to emergency maintenance.
++
++Repository settings are intentionally not changed by this patch.
+diff --git a/docs/sample-media-sources.md b/docs/sample-media-sources.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e8f1c2173a55162e0fbb9b74e12e539932d2000
+--- /dev/null
++++ b/docs/sample-media-sources.md
+@@ -0,0 +1,18 @@
++# Sample media sources
++
++No third-party photographs are bundled in this patch. In particular, no ALUMED image is copied or hotlinked by the theme/plugin.
++
++The MBA owner has stated that ALUMED photographs may be used temporarily for local/staging development. If a later seed/import step uses that permission, every downloaded file must be stored as replaceable WordPress media and this document must record:
++
++| Local filename / attachment | Exact ALUMED source page | Exact image URL | Retrieved | Permission/purpose | Launch status |
++|---|---|---|---|---|---|
++| _None in this batch_ | — | — | — | — | — |
++
++Rules for future temporary media:
++
++- Only `alumed.tn` photographs may use the stated temporary permission.
++- Never hotlink; download, optimize to WebP where appropriate, and import to the Media Library.
++- Never represent an ALUMED project photograph as an MBA realization.
++- Do not copy ALUMED company copy, claims, certifications, testimonials, contact data, or statistics.
++- Mark any seeded product/project with `mba_sample_content = 1` and each temporary Media Library attachment with `mba_temporary_media_source` so **Tools → Site Health** reports a critical launch warning until it is replaced or removed.
++- If exact provenance cannot be recorded, use a neutral locally generated placeholder for testing instead of guessing.
+diff --git a/docs/testing.md b/docs/testing.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d735106f7bcac075384e9911e3a25a62e96fb6d
+--- /dev/null
++++ b/docs/testing.md
+@@ -0,0 +1,47 @@
++# Testing
++
++## Local quality checks
++
++```bash
++./bin/lint-php.sh
++php tests/php/run.php
++composer install
++composer check
++npm install
++npm run check
++docker compose config --quiet
++```
++
++The Composer checks run PHP syntax, WordPress Coding Standards, PHPStan, and the lightweight behavior tests. The npm checks lint the product-admin JavaScript and custom CSS and parse tracked JSON/YAML files.
++
++### Development-only dependency rationale
++
++- `wp-coding-standards/wpcs` + the Composer PHPCS installer enforce WordPress PHP conventions without affecting production.
++- `phpstan/phpstan` + `szepeviktor/phpstan-wordpress` provide WordPress-aware static analysis without shipping runtime code.
++- `eslint` and `stylelint` lint the small custom admin JavaScript/CSS surface; `stylelint-config-standard` supplies maintained baseline rules.
++- `yaml` is used only by the local/CI configuration validator because Node has no built-in YAML parser.
++
++No new production PHP or JavaScript dependency is introduced by issues #1–#5.
++
++## Clean WordPress smoke test
++
++```bash
++cp .env.example .env
++# Change the local-only passwords if desired.
++./bin/smoke-wordpress.sh
++```
++
++The smoke test installs WordPress, activates `mba-site-core` and `mba-menuiseries`, creates a product plus generated test image, restarts the containers, confirms the product/media persist, and verifies the product type remains registered if another installed theme is activated.
++
++## Manual issue #5 admin checks
++
++1. Open **Products → Add New** and confirm all structured fields, required/optional labels, photo guidance, and PDF guidance are visible.
++2. Upload portrait and landscape images to the Media Library; assign/reorder gallery items and verify the stored order after reload.
++3. Select a non-PDF attachment as `mba_technical_document` by manipulating the request or REST client; save and confirm the plugin rejects it with an admin error.
++4. Relate a product to a FAQ and project; verify `mba_related_products` on both related records contains the product ID, then remove the relationship and verify the backlink is removed.
++5. Leave every optional image/field empty and confirm the editor saves without warnings.
++6. Test keyboard navigation through buttons, repeaters, media actions, and relationship selects.
++
++## Browser verification viewports
++
++Capture the homepage at 390×844 and 1440×1000, plus Products list, product editor, public/preview product, and one validation/empty state. Confirm no console errors, clipping, broken media, unreadable focus states, or accidental third-party branding.
+diff --git a/eslint.config.js b/eslint.config.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5db8e7474c618f7f00165f1bcfb75851976f7767
+--- /dev/null
++++ b/eslint.config.js
+@@ -0,0 +1,15 @@
++module.exports = [
++	{
++		files: ['wp-content/**/*.js'],
++		languageOptions: {
++			ecmaVersion: 2021,
++			sourceType: 'script',
++			globals: { document: 'readonly', jQuery: 'readonly', wp: 'readonly', mbaProductAdmin: 'readonly' }
++		},
++		rules: {
++			'eqeqeq': 'error',
++			'no-undef': 'error',
++			'no-unused-vars': 'error'
++		}
++	}
++];
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..8baa86975ebc756993fd20fea004e72399d995a7
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,16 @@
++{
++  "name": "mba-wp-quality",
++  "private": true,
++  "scripts": {
++    "lint:js": "eslint wp-content/plugins/mba-site-core/assets/js/**/*.js",
++    "lint:css": "stylelint 'wp-content/**/*.css'",
++    "validate:config": "node scripts/validate-config.js",
++    "check": "npm run lint:js && npm run lint:css && npm run validate:config"
++  },
++  "devDependencies": {
++    "eslint": "9.35.0",
++    "stylelint": "16.23.1",
++    "stylelint-config-standard": "39.0.0",
++    "yaml": "2.8.1"
++  }
++}
+diff --git a/phpcs.xml.dist b/phpcs.xml.dist
+new file mode 100644
+index 0000000000000000000000000000000000000000..bb889949548dc0f39ebe33794e9eba439050ef98
+--- /dev/null
++++ b/phpcs.xml.dist
+@@ -0,0 +1,12 @@
++<?xml version="1.0"?>
++<ruleset name="MBA WordPress">
++  <description>WordPress coding standards for custom MBA code.</description>
++  <file>wp-content/plugins/mba-site-core</file>
++  <file>wp-content/themes/mba-menuiseries</file>
++  <exclude-pattern>*/vendor/*</exclude-pattern>
++  <exclude-pattern>*/node_modules/*</exclude-pattern>
++  <rule ref="WordPress-Core"/>
++  <rule ref="WordPress-Docs"/>
++  <rule ref="WordPress-Extra"/>
++  <config name="minimum_supported_wp_version" value="7.0"/>
++</ruleset>
+diff --git a/phpstan.neon.dist b/phpstan.neon.dist
+new file mode 100644
+index 0000000000000000000000000000000000000000..7110e94e4d8d99ae1edc4bd057a2d99a02b03d08
+--- /dev/null
++++ b/phpstan.neon.dist
+@@ -0,0 +1,10 @@
++includes:
++  - vendor/szepeviktor/phpstan-wordpress/extension.neon
++parameters:
++  level: 5
++  paths:
++    - wp-content/plugins/mba-site-core
++    - wp-content/themes/mba-menuiseries
++  excludePaths:
++    analyse:
++      - wp-content/themes/mba-menuiseries/patterns/*
+diff --git a/scripts/validate-config.js b/scripts/validate-config.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bfb3026e97e91e026392b606b7f6e33087aec8f3
+--- /dev/null
++++ b/scripts/validate-config.js
+@@ -0,0 +1,19 @@
++const fs = require('node:fs');
++const YAML = require('yaml');
++
++const jsonFiles = [
++	'composer.json',
++	'package.json',
++	'.stylelintrc.json',
++	'wp-content/themes/mba-menuiseries/theme.json'
++];
++const yamlFiles = ['docker-compose.yml', '.github/workflows/ci.yml'];
++
++for (const file of jsonFiles) {
++	JSON.parse(fs.readFileSync(file, 'utf8'));
++	console.log(`JSON OK: ${file}`);
++}
++for (const file of yamlFiles) {
++	YAML.parse(fs.readFileSync(file, 'utf8'));
++	console.log(`YAML OK: ${file}`);
++}
+diff --git a/tests/php/bootstrap.php b/tests/php/bootstrap.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..c71b17eb6524346e073a75cae4e3b594e110dd18
+--- /dev/null
++++ b/tests/php/bootstrap.php
+@@ -0,0 +1,28 @@
++<?php
++/** Lightweight WordPress stubs for deterministic unit tests. */
++define( 'ABSPATH', __DIR__ );
++define( 'MBA_CORE_PATH', dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/' );
++$GLOBALS['mba_test_post_types'] = array();
++$GLOBALS['mba_test_taxonomies'] = array();
++$GLOBALS['mba_test_meta'] = array();
++$GLOBALS['mba_test_post_meta'] = array();
++$GLOBALS['mba_test_post_types_by_id'] = array( 101 => 'mba_faq', 202 => 'mba_project', 303 => 'post', 404 => 'mba_product' );
++function __( $text ) { return $text; }
++function add_action() {}
++function add_filter() {}
++function sanitize_text_field( $value ) { return trim( strip_tags( (string) $value ) ); }
++function sanitize_textarea_field( $value ) { return trim( strip_tags( (string) $value ) ); }
++function absint( $value ) { return abs( (int) $value ); }
++function wp_kses_post( $value ) { return (string) $value; }
++function esc_url_raw( $value ) { return filter_var( $value, FILTER_SANITIZE_URL ); }
++function rest_sanitize_boolean( $value ) { return filter_var( $value, FILTER_VALIDATE_BOOLEAN ); }
++function current_user_can() { return true; }
++function wp_attachment_is_image( $id ) { return 42 === (int) $id; }
++function get_post_mime_type( $id ) { return 88 === (int) $id ? 'application/pdf' : ( 42 === (int) $id ? 'image/webp' : false ); }
++function wp_unslash( $value ) { return $value; }
++function get_post_type( $id = null ) { return $GLOBALS['mba_test_post_types_by_id'][ (int) $id ] ?? null; }
++function get_post_meta( $id, $key, $single = false ) { return $GLOBALS['mba_test_post_meta'][ (int) $id ][ $key ] ?? ( $single ? '' : array() ); }
++function update_post_meta( $id, $key, $value ) { $GLOBALS['mba_test_post_meta'][ (int) $id ][ $key ] = $value; return true; }
++function register_post_type( $type, $args ) { $GLOBALS['mba_test_post_types'][ $type ] = $args; }
++function register_taxonomy( $taxonomy, $objects, $args ) { $GLOBALS['mba_test_taxonomies'][ $taxonomy ] = array( 'objects' => (array) $objects, 'args' => $args ); }
++function register_post_meta( $post_type, $key, $args ) { $GLOBALS['mba_test_meta'][ $post_type ][ $key ] = $args; }
+diff --git a/tests/php/run.php b/tests/php/run.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c798e27d7da6e9ed1f9b6ef4c5a4ce3d8955270
+--- /dev/null
++++ b/tests/php/run.php
+@@ -0,0 +1,60 @@
++<?php
++require __DIR__ . '/bootstrap.php';
++require MBA_CORE_PATH . 'includes/content-types.php';
++require MBA_CORE_PATH . 'includes/meta-fields.php';
++require MBA_CORE_PATH . 'includes/product-admin.php';
++
++function mba_assert( $condition, string $message ): void {
++	if ( ! $condition ) {
++		fwrite( STDERR, "FAIL: {$message}\n" );
++		exit( 1 );
++	}
++}
++
++mba_core_register_content_types();
++mba_core_register_meta_fields();
++
++foreach ( array( 'mba_product', 'mba_project', 'mba_faq', 'mba_testimonial', 'mba_partner' ) as $type ) {
++	mba_assert( isset( $GLOBALS['mba_test_post_types'][ $type ] ), "registered post type {$type}" );
++	mba_assert( true === $GLOBALS['mba_test_post_types'][ $type ]['show_in_rest'], "REST enabled for {$type}" );
++}
++mba_assert( 'produits' === $GLOBALS['mba_test_post_types']['mba_product']['has_archive'], 'product archive is /produits/' );
++mba_assert( false === $GLOBALS['mba_test_post_types']['mba_faq']['publicly_queryable'], 'FAQ items are not individually public' );
++mba_assert( isset( $GLOBALS['mba_test_taxonomies']['mba_product_category'] ), 'product category registered' );
++mba_assert( isset( $GLOBALS['mba_test_taxonomies']['mba_application_type'] ), 'application type registered' );
++
++$required_product_meta = array(
++	'mba_short_description', 'mba_benefits', 'mba_configurations', 'mba_materials_profiles',
++	'mba_glazing_options', 'mba_colors_finishes', 'mba_performance_details', 'mba_applications',
++	'mba_maintenance', 'mba_gallery', 'mba_technical_document', 'mba_featured', 'mba_display_order',
++	'mba_related_faqs', 'mba_related_projects',
++);
++foreach ( $required_product_meta as $key ) {
++	mba_assert( isset( $GLOBALS['mba_test_meta']['mba_product'][ $key ] ), "product meta {$key} registered" );
++}
++
++mba_assert( array( 'One', 'Two' ) === mba_core_sanitize_string_list( array( ' One ', '', '<b>Two</b>', 'One' ) ), 'string repeater sanitization' );
++mba_assert( array( 3, 9 ) === mba_core_sanitize_id_list( array( '3', -9, 0, 3 ) ), 'ID list sanitization and dedupe' );
++mba_assert( array( 42 ) === mba_core_sanitize_image_id_list( array( 42, 88, 999 ) ), 'gallery keeps image attachment IDs only' );
++mba_assert( 88 === mba_core_sanitize_pdf_attachment_id( 88 ) && 0 === mba_core_sanitize_pdf_attachment_id( 42 ), 'technical document accepts PDF attachments only' );
++mba_assert( 9999 === mba_core_sanitize_display_order( 12000 ), 'display order is clamped to editor range' );
++mba_assert( 5 === mba_core_sanitize_rating( 9 ), 'testimonial rating is clamped to five' );
++mba_assert( array( 101 ) === mba_core_sanitize_faq_id_list( array( 101, 202, 303 ) ), 'REST FAQ relationships reject wrong post types' );
++mba_assert( array( 202 ) === mba_core_sanitize_project_id_list( array( 101, 202, 303 ) ), 'REST project relationships reject wrong post types' );
++mba_assert( array( 404 ) === mba_core_sanitize_product_id_list( array( 404, 202, 303 ) ), 'REST product backlinks reject wrong post types' );
++$finishes = mba_core_sanitize_colors_finishes( array( array( 'label' => ' Bronze ', 'image_id' => 42 ), array( 'label' => 'Bad', 'image_id' => 99 ) ) );
++mba_assert( 42 === $finishes[0]['image_id'] && 0 === $finishes[1]['image_id'], 'finish images reject non-image attachment IDs' );
++$performance = mba_core_sanitize_performance_details( array( array( 'label' => '<b>Uw</b>', 'value' => ' verified ' ) ) );
++mba_assert( 'Uw' === $performance[0]['label'] && 'verified' === $performance[0]['value'], 'performance rows sanitized' );
++
++
++$rows = mba_core_zip_rows( array( 'label' => array( 'A', 'B' ), 'value' => array( '1' ) ), array( 'label', 'value' ) );
++mba_assert( 2 === count( $rows ) && '' === $rows[1]['value'], 'parallel repeater rows are zipped safely' );
++mba_assert( array( 101 ) === mba_core_validate_relationship_ids( array( 101, 202, 303 ), 'mba_faq' ), 'relationship IDs are constrained to expected post type' );
++$GLOBALS['mba_test_post_meta'][202]['mba_related_products'] = array( 7 );
++mba_core_sync_product_backlinks( 55, 'mba_project', array(), array( 202 ) );
++mba_assert( array( 7, 55 ) === $GLOBALS['mba_test_post_meta'][202]['mba_related_products'], 'project backlink added' );
++mba_core_sync_product_backlinks( 55, 'mba_project', array( 202 ), array() );
++mba_assert( array( 7 ) === $GLOBALS['mba_test_post_meta'][202]['mba_related_products'], 'project backlink removed' );
++
++fwrite( STDOUT, "PHP behavior tests passed.\n" );
+diff --git a/wp-content/plugins/mba-site-core/assets/css/product-admin.css b/wp-content/plugins/mba-site-core/assets/css/product-admin.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..236a62b435d9b836e7c8099cbd2d5055a763d5fc
+--- /dev/null
++++ b/wp-content/plugins/mba-site-core/assets/css/product-admin.css
+@@ -0,0 +1,26 @@
++.mba-product-fields { max-width: 1100px; }
++.mba-guidance { padding: 12px 14px; background: #f0f6fc; border-left: 4px solid #2271b1; }
++.mba-field { margin: 18px 0; }
++.mba-field > label { display: block; margin-bottom: 6px; }
++.mba-required { color: #8a2424; font-size: 12px; margin-left: 6px; }
++.mba-optional { color: #646970; font-size: 12px; font-weight: 400; margin-left: 6px; }
++.mba-grid-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
++.mba-compact-fields { align-items: end; }
++.mba-repeater-row,
++.mba-performance-row,
++.mba-finish-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
++.mba-performance-row input,
++.mba-finish-row > input[type="text"] { flex: 1; }
++.mba-gallery-list { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
++.mba-gallery-list li { position: relative; cursor: move; margin: 0; }
++.mba-gallery-list img,
++.mba-finish-preview img { width: 96px; height: 72px; object-fit: cover; display: block; }
++.mba-gallery-remove { position: absolute; top: 2px; right: 4px; background: #fff !important; border-radius: 50%; line-height: 1; }
++.mba-document-label { display: inline-block; margin-right: 10px; min-width: 160px; }
++
++@media (max-width: 782px) {
++	.mba-grid-fields { grid-template-columns: 1fr; }
++	.mba-repeater-row,
++	.mba-performance-row,
++	.mba-finish-row { align-items: stretch; flex-direction: column; }
++}
+diff --git a/wp-content/plugins/mba-site-core/assets/js/product-admin.js b/wp-content/plugins/mba-site-core/assets/js/product-admin.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b113ee1477e71eec76c5943fb1a5abd535834163
+--- /dev/null
++++ b/wp-content/plugins/mba-site-core/assets/js/product-admin.js
+@@ -0,0 +1,88 @@
++(function ($) {
++	'use strict';
++
++	function updateGalleryInput() {
++		var ids = $('.mba-gallery-list li').map(function () { return $(this).data('id'); }).get();
++		$('#mba_gallery').val(ids.join(','));
++	}
++
++	$('.mba-gallery-list').sortable({ update: updateGalleryInput });
++
++	$(document).on('click', '.mba-gallery-remove', function () {
++		$(this).closest('li').remove();
++		updateGalleryInput();
++	});
++
++	$('.mba-gallery-choose').on('click', function () {
++		var frame = wp.media({ title: mbaProductAdmin.galleryTitle, library: { type: 'image' }, multiple: true });
++		frame.on('select', function () {
++			var list = $('.mba-gallery-list').empty();
++			frame.state().get('selection').each(function (attachment) {
++				var item = attachment.toJSON();
++				var thumb = item.sizes && item.sizes.thumbnail ? item.sizes.thumbnail.url : item.url;
++				list.append($('<li>').attr('data-id', item.id).append($('<img>').attr({ src: thumb, alt: '' })).append($('<button>', { type: 'button', class: 'button-link-delete mba-gallery-remove', 'aria-label': mbaProductAdmin.removeImage, text: '×' })));
++			});
++			updateGalleryInput();
++		});
++		frame.open();
++	});
++
++	$('.mba-document-choose').on('click', function () {
++		var frame = wp.media({ title: mbaProductAdmin.pdfTitle, library: { type: 'application/pdf' }, multiple: false });
++		frame.on('select', function () {
++			var item = frame.state().get('selection').first().toJSON();
++			$('#mba_technical_document').val(item.id);
++			$('.mba-document-label').text(item.title || item.filename);
++		});
++		frame.open();
++	});
++
++	$('.mba-document-remove').on('click', function () {
++		$('#mba_technical_document').val('');
++		$('.mba-document-label').text(mbaProductAdmin.noPdf);
++	});
++
++	$(document).on('click', '.mba-choose-finish-image', function () {
++		var row = $(this).closest('.mba-finish-row');
++		var frame = wp.media({ title: mbaProductAdmin.finishTitle, library: { type: 'image' }, multiple: false });
++		frame.on('select', function () {
++			var item = frame.state().get('selection').first().toJSON();
++			var thumb = item.sizes && item.sizes.thumbnail ? item.sizes.thumbnail.url : item.url;
++			row.find('.mba-finish-image-id').val(item.id);
++			row.find('.mba-finish-preview').html($('<img>').attr({ src: thumb, alt: '' }));
++		});
++		frame.open();
++	});
++
++	$(document).on('click', '.mba-remove-row', function () {
++		var row = $(this).closest('.mba-repeater-row');
++		if ( row.siblings('.mba-repeater-row').length ) {
++			row.remove();
++		} else {
++			row.find('input').val('');
++			row.find('img').remove();
++		}
++	});
++
++	$('.mba-add-row').on('click', function () {
++		var rows = $(this).siblings('.mba-repeater-rows');
++		var row = rows.children('.mba-repeater-row').last().clone();
++		row.find('input').val('');
++		rows.append(row);
++	});
++
++	$('.mba-add-performance').on('click', function () {
++		var rows = $('.mba-performance-rows');
++		var row = rows.children('.mba-performance-row').last().clone();
++		row.find('input').val('');
++		rows.append(row);
++	});
++
++	$('.mba-add-finish').on('click', function () {
++		var rows = $('.mba-finish-rows');
++		var row = rows.children('.mba-finish-row').last().clone();
++		row.find('input').val('');
++		row.find('.mba-finish-preview').empty();
++		rows.append(row);
++	});
++})(jQuery);
+diff --git a/wp-content/plugins/mba-site-core/includes/content-types.php b/wp-content/plugins/mba-site-core/includes/content-types.php
+index b6e9b776d8cfa6657d69369a7b4e5bd42a7566a5..f2a4b8c4a657844a3bda0927d1c3857b295ab7fa 100644
+--- a/wp-content/plugins/mba-site-core/includes/content-types.php
++++ b/wp-content/plugins/mba-site-core/includes/content-types.php
+@@ -10,85 +10,254 @@ if ( ! defined( 'ABSPATH' ) ) {
+ }
+ 
+ /**
+- * Register a public content type with editor-friendly defaults.
++ * Build complete owner-facing labels for a content type.
++ *
++ * @param string $singular Singular label.
++ * @param string $plural   Plural label.
++ * @return array<string,string>
+  */
+-function mba_core_register_post_type( string $slug, string $singular, string $plural, string $archive ): void {
+-	register_post_type(
+-		$slug,
+-		array(
+-			'labels'       => array(
+-				'name'          => $plural,
+-				'singular_name' => $singular,
+-				'add_new_item'  => sprintf( __( 'Add New %s', 'mba-site-core' ), $singular ),
+-				'edit_item'     => sprintf( __( 'Edit %s', 'mba-site-core' ), $singular ),
+-			),
+-			'public'       => true,
+-			'show_in_rest' => true,
+-			'has_archive'  => $archive,
+-			'rewrite'      => array( 'slug' => $archive ),
+-			'menu_icon'    => 'dashicons-format-gallery',
+-			'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ),
+-		)
++function mba_core_post_type_labels( string $singular, string $plural ): array {
++	return array(
++		'name'                  => $plural,
++		'singular_name'         => $singular,
++		'add_new'               => __( 'Add New', 'mba-site-core' ),
++		'add_new_item'          => sprintf(
++			/* translators: %s: singular content type label. */
++			__( 'Add New %s', 'mba-site-core' ),
++			$singular
++		),
++		'edit_item'             => sprintf(
++			/* translators: %s: singular content type label. */
++			__( 'Edit %s', 'mba-site-core' ),
++			$singular
++		),
++		'new_item'              => sprintf(
++			/* translators: %s: singular content type label. */
++			__( 'New %s', 'mba-site-core' ),
++			$singular
++		),
++		'view_item'             => sprintf(
++			/* translators: %s: singular content type label. */
++			__( 'View %s', 'mba-site-core' ),
++			$singular
++		),
++		'view_items'            => sprintf(
++			/* translators: %s: plural content type label. */
++			__( 'View %s', 'mba-site-core' ),
++			$plural
++		),
++		'search_items'          => sprintf(
++			/* translators: %s: plural content type label. */
++			__( 'Search %s', 'mba-site-core' ),
++			$plural
++		),
++		'not_found'             => sprintf(
++			/* translators: %s: plural content type label. */
++			__( 'No %s found.', 'mba-site-core' ),
++			strtolower( $plural )
++		),
++		'not_found_in_trash'    => sprintf(
++			/* translators: %s: plural content type label. */
++			__( 'No %s found in Trash.', 'mba-site-core' ),
++			strtolower( $plural )
++		),
++		'all_items'             => sprintf(
++			/* translators: %s: plural content type label. */
++			__( 'All %s', 'mba-site-core' ),
++			$plural
++		),
++		'archives'              => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s Archives', 'mba-site-core' ),
++			$singular
++		),
++		'attributes'            => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s Attributes', 'mba-site-core' ),
++			$singular
++		),
++		'featured_image'        => __( 'Cover image', 'mba-site-core' ),
++		'set_featured_image'    => __( 'Set cover image', 'mba-site-core' ),
++		'remove_featured_image' => __( 'Remove cover image', 'mba-site-core' ),
++		'use_featured_image'    => __( 'Use as cover image', 'mba-site-core' ),
++		'item_published'        => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s published.', 'mba-site-core' ),
++			$singular
++		),
++		'item_updated'          => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s updated.', 'mba-site-core' ),
++			$singular
++		),
++		'item_reverted_to_draft' => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s reverted to draft.', 'mba-site-core' ),
++			$singular
++		),
++		'item_scheduled'          => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s scheduled.', 'mba-site-core' ),
++			$singular
++		),
++		'item_link'               => sprintf(
++			/* translators: %s: singular content type label. */
++			__( '%s link', 'mba-site-core' ),
++			$singular
++		),
++		'item_link_description'   => sprintf(
++			/* translators: %s: singular content type label. */
++			__( 'A link to a %s.', 'mba-site-core' ),
++			strtolower( $singular )
++		),
+ 	);
+ }
+ 
+ /**
+- * Register project and catalogue data independently from the theme.
++ * Register the durable business content types.
+  */
+ function mba_core_register_content_types(): void {
+-	mba_core_register_post_type( 'mba_product', __( 'Product', 'mba-site-core' ), __( 'Products', 'mba-site-core' ), 'produits' );
+-	mba_core_register_post_type( 'mba_project', __( 'Project', 'mba-site-core' ), __( 'Projects', 'mba-site-core' ), 'realisations' );
+-	mba_core_register_post_type( 'mba_faq', __( 'FAQ', 'mba-site-core' ), __( 'FAQs', 'mba-site-core' ), 'faq-items' );
+-	mba_core_register_post_type( 'mba_testimonial', __( 'Testimonial', 'mba-site-core' ), __( 'Testimonials', 'mba-site-core' ), 'temoignages' );
+-	mba_core_register_post_type( 'mba_partner', __( 'Partner', 'mba-site-core' ), __( 'Partners', 'mba-site-core' ), 'partenaires' );
+-
+-	register_taxonomy(
+-		'mba_product_category',
+-		array( 'mba_product', 'mba_project' ),
+-		array(
+-			'labels'            => array(
+-				'name'          => __( 'Product Categories', 'mba-site-core' ),
+-				'singular_name' => __( 'Product Category', 'mba-site-core' ),
+-			),
+-			'public'            => true,
+-			'show_in_rest'      => true,
+-			'hierarchical'      => true,
+-			'show_admin_column' => true,
+-			'rewrite'           => array( 'slug' => 'categorie-produit' ),
+-		)
++	$public_types = array(
++		'mba_product' => array(
++			'singular' => __( 'Product', 'mba-site-core' ),
++			'plural'   => __( 'Products', 'mba-site-core' ),
++			'archive'  => 'produits',
++			'icon'     => 'dashicons-products',
++		),
++		'mba_project' => array(
++			'singular' => __( 'Project', 'mba-site-core' ),
++			'plural'   => __( 'Projects', 'mba-site-core' ),
++			'archive'  => 'realisations',
++			'icon'     => 'dashicons-portfolio',
++		),
+ 	);
+ 
+-	register_taxonomy(
+-		'mba_project_type',
+-		'mba_project',
+-		array(
+-			'labels'            => array(
+-				'name'          => __( 'Project Types', 'mba-site-core' ),
+-				'singular_name' => __( 'Project Type', 'mba-site-core' ),
+-			),
+-			'public'            => true,
+-			'show_in_rest'      => true,
+-			'hierarchical'      => true,
+-			'show_admin_column' => true,
+-			'rewrite'           => array( 'slug' => 'type-projet' ),
+-		)
+-	);
++	foreach ( $public_types as $slug => $config ) {
++		register_post_type(
++			$slug,
++			array(
++				'labels'             => mba_core_post_type_labels( $config['singular'], $config['plural'] ),
++				'public'             => true,
++				'publicly_queryable' => true,
++				'show_in_rest'       => true,
++				'has_archive'        => $config['archive'],
++				'rewrite'            => array(
++					'slug'       => $config['archive'],
++					'with_front' => false,
++				),
++				'menu_icon'          => $config['icon'],
++				'menu_position'      => 20,
++				'map_meta_cap'       => true,
++				'capability_type'    => 'post',
++				'supports'           => array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ),
++			)
++		);
++	}
+ 
+-	register_taxonomy(
+-		'mba_faq_category',
+-		'mba_faq',
+-		array(
+-			'labels'            => array(
+-				'name'          => __( 'FAQ Categories', 'mba-site-core' ),
+-				'singular_name' => __( 'FAQ Category', 'mba-site-core' ),
+-			),
+-			'public'            => false,
+-			'show_ui'           => true,
+-			'show_in_rest'      => true,
+-			'hierarchical'      => true,
+-			'show_admin_column' => true,
+-		)
++	$internal_types = array(
++		'mba_faq' => array(
++			'singular' => __( 'FAQ', 'mba-site-core' ),
++			'plural'   => __( 'FAQs', 'mba-site-core' ),
++			'icon'     => 'dashicons-editor-help',
++			'supports' => array( 'title', 'editor', 'revisions', 'custom-fields' ),
++		),
++		'mba_testimonial' => array(
++			'singular' => __( 'Testimonial', 'mba-site-core' ),
++			'plural'   => __( 'Testimonials', 'mba-site-core' ),
++			'icon'     => 'dashicons-format-quote',
++			'supports' => array( 'title', 'editor', 'thumbnail', 'revisions', 'custom-fields' ),
++		),
++		'mba_partner' => array(
++			'singular' => __( 'Partner', 'mba-site-core' ),
++			'plural'   => __( 'Partners', 'mba-site-core' ),
++			'icon'     => 'dashicons-groups',
++			'supports' => array( 'title', 'editor', 'thumbnail', 'revisions', 'custom-fields' ),
++		),
+ 	);
++
++	foreach ( $internal_types as $slug => $config ) {
++		register_post_type(
++			$slug,
++			array(
++				'labels'              => mba_core_post_type_labels( $config['singular'], $config['plural'] ),
++				'public'              => false,
++				'publicly_queryable'  => false,
++				'exclude_from_search' => true,
++				'show_ui'             => true,
++				'show_in_rest'        => true,
++				'has_archive'         => false,
++				'rewrite'             => false,
++				'menu_icon'           => $config['icon'],
++				'map_meta_cap'        => true,
++				'capability_type'     => 'post',
++				'supports'            => $config['supports'],
++			)
++		);
++	}
++
++	mba_core_register_taxonomy( 'mba_product_category', array( 'mba_product', 'mba_project' ), __( 'Product Categories', 'mba-site-core' ), __( 'Product Category', 'mba-site-core' ), true, 'categorie-produit' );
++	mba_core_register_taxonomy( 'mba_application_type', array( 'mba_product' ), __( 'Application Types', 'mba-site-core' ), __( 'Application Type', 'mba-site-core' ), true, 'application-produit' );
++	mba_core_register_taxonomy( 'mba_project_type', array( 'mba_project' ), __( 'Project Types', 'mba-site-core' ), __( 'Project Type', 'mba-site-core' ), true, 'type-projet' );
++	mba_core_register_taxonomy( 'mba_project_location', array( 'mba_project' ), __( 'Project Locations', 'mba-site-core' ), __( 'Project Location', 'mba-site-core' ), true, 'lieu-projet' );
++	mba_core_register_taxonomy( 'mba_faq_category', array( 'mba_faq' ), __( 'FAQ Categories', 'mba-site-core' ), __( 'FAQ Category', 'mba-site-core' ), false, '' );
+ }
+ add_action( 'init', 'mba_core_register_content_types' );
+ 
++/**
++ * Register one hierarchical taxonomy with consistent REST/admin behavior.
++ *
++ * @param string        $taxonomy Taxonomy key.
++ * @param array<string> $objects  Object types.
++ * @param string        $plural   Plural label.
++ * @param string        $singular Singular label.
++ * @param bool          $public   Public queryability.
++ * @param string        $rewrite  Rewrite slug when public.
++ */
++function mba_core_register_taxonomy( string $taxonomy, array $objects, string $plural, string $singular, bool $public, string $rewrite ): void {
++	$args = array(
++		'labels'             => array(
++			'name'          => $plural,
++			'singular_name' => $singular,
++			'search_items'  => sprintf(
++				/* translators: %s: plural taxonomy label. */
++				__( 'Search %s', 'mba-site-core' ),
++				$plural
++			),
++			'all_items'     => sprintf(
++				/* translators: %s: plural taxonomy label. */
++				__( 'All %s', 'mba-site-core' ),
++				$plural
++			),
++			'edit_item'     => sprintf(
++				/* translators: %s: singular taxonomy label. */
++				__( 'Edit %s', 'mba-site-core' ),
++				$singular
++			),
++			'update_item'   => sprintf(
++				/* translators: %s: singular taxonomy label. */
++				__( 'Update %s', 'mba-site-core' ),
++				$singular
++			),
++			'add_new_item'  => sprintf(
++				/* translators: %s: singular taxonomy label. */
++				__( 'Add New %s', 'mba-site-core' ),
++				$singular
++			),
++		),
++		'public'             => $public,
++		'publicly_queryable' => $public,
++		'show_ui'            => true,
++		'show_in_rest'       => true,
++		'hierarchical'       => true,
++		'show_admin_column'  => true,
++	);
++	if ( $public ) {
++		$args['rewrite'] = array(
++			'slug'       => $rewrite,
++			'with_front' => false,
++		);
++	} else {
++		$args['rewrite'] = false;
++	}
++	register_taxonomy( $taxonomy, $objects, $args );
++}
+diff --git a/wp-content/plugins/mba-site-core/includes/meta-fields.php b/wp-content/plugins/mba-site-core/includes/meta-fields.php
+index c631b80b930b3ff776be6fa1709dfb85402929e6..c388637cea22f6418528366007fa06a7967726f7 100644
+--- a/wp-content/plugins/mba-site-core/includes/meta-fields.php
++++ b/wp-content/plugins/mba-site-core/includes/meta-fields.php
+@@ -1,6 +1,6 @@
+ <?php
+ /**
+- * Native REST-enabled fields for the initial content model.
++ * REST-enabled metadata and sanitizers.
+  *
+  * @package MBA_Site_Core
+  */
+@@ -10,59 +10,313 @@ if ( ! defined( 'ABSPATH' ) ) {
+ }
+ 
+ /**
+- * Register safe scalar metadata. Rich repeaters and media relationships are a
+- * dedicated backlog item so their editing experience can be tested properly.
++ * Metadata authorization uses the actual target post capability.
++ *
++ * @param bool   $allowed Existing authorization result.
++ * @param string $meta_key Meta key.
++ * @param int    $post_id  Post ID.
++ * @return bool
++ */
++function mba_core_meta_auth( bool $allowed, string $meta_key, int $post_id ): bool {
++	unset( $allowed, $meta_key );
++	return current_user_can( 'edit_post', $post_id );
++}
++
++/**
++ * Sanitize an array of plain strings.
++ *
++ * @param mixed $value Raw value.
++ * @return array<string>
++ */
++function mba_core_sanitize_string_list( $value ): array {
++	$output = array();
++	foreach ( (array) $value as $item ) {
++		$item = sanitize_text_field( (string) $item );
++		if ( '' !== $item ) {
++			$output[] = $item;
++		}
++	}
++	return array_values( array_unique( $output ) );
++}
++
++/**
++ * Sanitize a list of positive post/attachment IDs.
++ *
++ * @param mixed $value Raw value.
++ * @return array<int>
++ */
++function mba_core_sanitize_id_list( $value ): array {
++	$ids = array_map( 'absint', (array) $value );
++	$ids = array_filter( $ids );
++	return array_values( array_unique( $ids ) );
++}
++
++
++/**
++ * Keep only image attachment IDs.
++ *
++ * @param mixed $value Raw value.
++ * @return array<int>
++ */
++function mba_core_sanitize_image_id_list( $value ): array {
++	$output = array();
++	foreach ( mba_core_sanitize_id_list( $value ) as $attachment_id ) {
++		if ( wp_attachment_is_image( $attachment_id ) ) {
++			$output[] = $attachment_id;
++		}
++	}
++	return $output;
++}
++
++/**
++ * Sanitize one PDF attachment reference.
++ *
++ * Invalid IDs are reduced to zero so unsupported document types are never
++ * persisted through REST or programmatic metadata writes.
++ *
++ * @param mixed $value Raw attachment ID.
++ * @return int
++ */
++function mba_core_sanitize_pdf_attachment_id( $value ): int {
++	$attachment_id = absint( $value );
++	if ( ! $attachment_id || 'application/pdf' !== get_post_mime_type( $attachment_id ) ) {
++		return 0;
++	}
++	return $attachment_id;
++}
++
++/**
++ * Clamp editorial display order to the supported UI range.
++ *
++ * @param mixed $value Raw value.
++ * @return int
++ */
++function mba_core_sanitize_display_order( $value ): int {
++	return min( 9999, absint( $value ) );
++}
++
++/**
++ * Clamp optional testimonial ratings to 0 (unset) or 1–5.
++ *
++ * @param mixed $value Raw value.
++ * @return int
++ */
++function mba_core_sanitize_rating( $value ): int {
++	return min( 5, absint( $value ) );
++}
++
++/**
++ * Keep relationship IDs constrained to one target post type.
++ *
++ * @param mixed  $value Raw IDs.
++ * @param string $post_type Expected post type.
++ * @return array<int>
++ */
++function mba_core_sanitize_relationship_id_list( $value, string $post_type ): array {
++	$output = array();
++	foreach ( mba_core_sanitize_id_list( $value ) as $post_id ) {
++		if ( $post_type === get_post_type( $post_id ) ) {
++			$output[] = $post_id;
++		}
++	}
++	return $output;
++}
++
++/**
++ * Sanitize related FAQ IDs.
++ *
++ * @param mixed $value Raw FAQ IDs.
++ * @return array<int>
++ */
++function mba_core_sanitize_faq_id_list( $value ): array {
++	return mba_core_sanitize_relationship_id_list( $value, 'mba_faq' );
++}
++
++/**
++ * Sanitize related project IDs.
++ *
++ * @param mixed $value Raw project IDs.
++ * @return array<int>
++ */
++function mba_core_sanitize_project_id_list( $value ): array {
++	return mba_core_sanitize_relationship_id_list( $value, 'mba_project' );
++}
++
++/**
++ * Sanitize related product IDs.
++ *
++ * @param mixed $value Raw product IDs.
++ * @return array<int>
++ */
++function mba_core_sanitize_product_id_list( $value ): array {
++	return mba_core_sanitize_relationship_id_list( $value, 'mba_product' );
++}
++
++/**
++ * Sanitize label/value performance rows.
++ *
++ * @param mixed $value Raw value.
++ * @return array<array{label:string,value:string}>
++ */
++function mba_core_sanitize_performance_details( $value ): array {
++	$output = array();
++	foreach ( (array) $value as $row ) {
++		if ( ! is_array( $row ) ) {
++			continue;
++		}
++		$label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
++		$detail = sanitize_text_field( (string) ( $row['value'] ?? '' ) );
++		if ( '' !== $label || '' !== $detail ) {
++			$output[] = array( 'label' => $label, 'value' => $detail );
++		}
++	}
++	return $output;
++}
++
++/**
++ * Sanitize color/finish rows and keep only image attachment IDs.
++ *
++ * @param mixed $value Raw value.
++ * @return array<array{label:string,image_id:int}>
++ */
++function mba_core_sanitize_colors_finishes( $value ): array {
++	$output = array();
++	foreach ( (array) $value as $row ) {
++		if ( ! is_array( $row ) ) {
++			continue;
++		}
++		$label    = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
++		$image_id = absint( $row['image_id'] ?? 0 );
++		if ( $image_id && ! wp_attachment_is_image( $image_id ) ) {
++			$image_id = 0;
++		}
++		if ( '' !== $label || $image_id ) {
++			$output[] = array( 'label' => $label, 'image_id' => $image_id );
++		}
++	}
++	return $output;
++}
++
++/**
++ * Register a scalar metadata field.
++ *
++ * @param string   $post_type Post type.
++ * @param string   $key       Meta key.
++ * @param string   $type      REST metadata type.
++ * @param callable $sanitize  Sanitization callback.
++ */
++function mba_core_register_scalar_meta( string $post_type, string $key, string $type, callable $sanitize ): void {
++	register_post_meta(
++		$post_type,
++		$key,
++		array(
++			'type'              => $type,
++			'single'            => true,
++			'show_in_rest'      => true,
++			'sanitize_callback' => $sanitize,
++			'auth_callback'     => 'mba_core_meta_auth',
++		)
++	);
++}
++
++/**
++ * Register an array metadata field with an explicit REST schema.
++ *
++ * @param string              $post_type    Post type.
++ * @param string              $key          Meta key.
++ * @param array<string,mixed> $items_schema Schema for each array item.
++ * @param callable            $sanitize     Sanitization callback.
++ */
++function mba_core_register_array_meta( string $post_type, string $key, array $items_schema, callable $sanitize ): void {
++	register_post_meta(
++		$post_type,
++		$key,
++		array(
++			'type'              => 'array',
++			'single'            => true,
++			'default'           => array(),
++			'show_in_rest'      => array(
++				'schema' => array(
++					'type'    => 'array',
++					'items'   => $items_schema,
++					'default' => array(),
++				),
++			),
++			'sanitize_callback' => $sanitize,
++			'auth_callback'     => 'mba_core_meta_auth',
++		)
++	);
++}
++
++/**
++ * Register all durable fields used by issues #4 and #5.
+  */
+ function mba_core_register_meta_fields(): void {
+-	$fields = array(
+-		'mba_product' => array(
+-			'mba_short_description' => 'string',
+-			'mba_materials_profiles' => 'string',
+-			'mba_maintenance'        => 'string',
+-			'mba_featured'           => 'boolean',
+-			'mba_display_order'      => 'integer',
+-		),
+-		'mba_project' => array(
+-			'mba_location_city'   => 'string',
+-			'mba_location_region' => 'string',
+-			'mba_completion_date' => 'string',
+-			'mba_challenge'       => 'string',
+-			'mba_solution'        => 'string',
+-			'mba_result'          => 'string',
+-			'mba_featured'        => 'boolean',
+-			'mba_display_order'   => 'integer',
+-		),
+-		'mba_testimonial' => array(
+-			'mba_customer_label'              => 'string',
+-			'mba_customer_location'           => 'string',
+-			'mba_rating'                      => 'integer',
+-			'mba_publication_consent_confirmed' => 'boolean',
+-			'mba_featured'                    => 'boolean',
++	mba_core_register_scalar_meta( 'mba_product', 'mba_short_description', 'string', 'sanitize_textarea_field' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_materials_profiles', 'string', 'wp_kses_post' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_maintenance', 'string', 'wp_kses_post' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_technical_document', 'integer', 'mba_core_sanitize_pdf_attachment_id' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_featured', 'boolean', 'rest_sanitize_boolean' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_display_order', 'integer', 'mba_core_sanitize_display_order' );
++	mba_core_register_scalar_meta( 'mba_product', 'mba_sample_content', 'boolean', 'rest_sanitize_boolean' );
++
++	$string_item = array( 'type' => 'string' );
++	$id_item     = array( 'type' => 'integer', 'minimum' => 1 );
++	mba_core_register_array_meta( 'mba_product', 'mba_benefits', $string_item, 'mba_core_sanitize_string_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_configurations', $string_item, 'mba_core_sanitize_string_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_glazing_options', $string_item, 'mba_core_sanitize_string_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_applications', $string_item, 'mba_core_sanitize_string_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_gallery', $id_item, 'mba_core_sanitize_image_id_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_related_faqs', $id_item, 'mba_core_sanitize_faq_id_list' );
++	mba_core_register_array_meta( 'mba_product', 'mba_related_projects', $id_item, 'mba_core_sanitize_project_id_list' );
++
++	mba_core_register_array_meta(
++		'mba_product',
++		'mba_performance_details',
++		array(
++			'type'       => 'object',
++			'properties' => array(
++				'label' => array( 'type' => 'string' ),
++				'value' => array( 'type' => 'string' ),
++			),
+ 		),
+-		'mba_partner' => array(
+-			'mba_partner_url'   => 'string',
+-			'mba_display_order' => 'integer',
+-			'mba_featured'      => 'boolean',
++		'mba_core_sanitize_performance_details'
++	);
++	mba_core_register_array_meta(
++		'mba_product',
++		'mba_colors_finishes',
++		array(
++			'type'       => 'object',
++			'properties' => array(
++				'label'    => array( 'type' => 'string' ),
++				'image_id' => array( 'type' => 'integer', 'minimum' => 0 ),
++			),
+ 		),
++		'mba_core_sanitize_colors_finishes'
+ 	);
+ 
+-	foreach ( $fields as $post_type => $post_fields ) {
+-		foreach ( $post_fields as $key => $type ) {
+-			register_post_meta(
+-				$post_type,
+-				$key,
+-				array(
+-					'type'              => $type,
+-					'single'            => true,
+-					'show_in_rest'      => true,
+-					'sanitize_callback' => 'string' === $type ? 'sanitize_text_field' : null,
+-					'auth_callback'     => static function (): bool {
+-						return current_user_can( 'edit_posts' );
+-					},
+-				)
+-			);
+-		}
++	$project_strings = array(
++		'mba_location_city', 'mba_location_region', 'mba_completion_date', 'mba_challenge',
++		'mba_solution', 'mba_result', 'mba_materials', 'mba_profiles', 'mba_glazing', 'mba_colors',
++	);
++	foreach ( $project_strings as $key ) {
++		mba_core_register_scalar_meta( 'mba_project', $key, 'string', 'sanitize_text_field' );
+ 	}
++	mba_core_register_scalar_meta( 'mba_project', 'mba_featured', 'boolean', 'rest_sanitize_boolean' );
++	mba_core_register_scalar_meta( 'mba_project', 'mba_display_order', 'integer', 'mba_core_sanitize_display_order' );
++	mba_core_register_array_meta( 'mba_project', 'mba_related_products', $id_item, 'mba_core_sanitize_product_id_list' );
++
++	mba_core_register_array_meta( 'mba_faq', 'mba_related_products', $id_item, 'mba_core_sanitize_product_id_list' );
++	mba_core_register_scalar_meta( 'mba_faq', 'mba_display_order', 'integer', 'mba_core_sanitize_display_order' );
++
++	mba_core_register_scalar_meta( 'mba_testimonial', 'mba_customer_label', 'string', 'sanitize_text_field' );
++	mba_core_register_scalar_meta( 'mba_testimonial', 'mba_customer_location', 'string', 'sanitize_text_field' );
++	mba_core_register_scalar_meta( 'mba_testimonial', 'mba_rating', 'integer', 'mba_core_sanitize_rating' );
++	mba_core_register_scalar_meta( 'mba_testimonial', 'mba_publication_consent_confirmed', 'boolean', 'rest_sanitize_boolean' );
++	mba_core_register_scalar_meta( 'mba_testimonial', 'mba_featured', 'boolean', 'rest_sanitize_boolean' );
++
++	mba_core_register_scalar_meta( 'mba_partner', 'mba_partner_url', 'string', 'esc_url_raw' );
++	mba_core_register_scalar_meta( 'mba_partner', 'mba_display_order', 'integer', 'mba_core_sanitize_display_order' );
++	mba_core_register_scalar_meta( 'mba_partner', 'mba_featured', 'boolean', 'rest_sanitize_boolean' );
+ }
+ add_action( 'init', 'mba_core_register_meta_fields' );
+-
+diff --git a/wp-content/plugins/mba-site-core/includes/product-admin.php b/wp-content/plugins/mba-site-core/includes/product-admin.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..8fa344b5eddb7c823a8e50799a178ab71da6b0d8
+--- /dev/null
++++ b/wp-content/plugins/mba-site-core/includes/product-admin.php
+@@ -0,0 +1,434 @@
++<?php
++/**
++ * Product editing experience and relationship synchronization.
++ *
++ * @package MBA_Site_Core
++ */
++
++if ( ! defined( 'ABSPATH' ) ) {
++	exit;
++}
++
++/**
++ * Add structured product fields below the block editor.
++ */
++function mba_core_add_product_meta_boxes(): void {
++	add_meta_box(
++		'mba-product-details',
++		__( 'Product details', 'mba-site-core' ),
++		'mba_core_render_product_meta_box',
++		'mba_product',
++		'normal',
++		'high',
++		array( '__block_editor_compatible_meta_box' => true )
++	);
++}
++add_action( 'add_meta_boxes_mba_product', 'mba_core_add_product_meta_boxes' );
++
++/**
++ * Enqueue media/repeater helpers only on product editing screens.
++ *
++ * @param string $hook_suffix Current admin page hook.
++ */
++function mba_core_product_admin_assets( string $hook_suffix ): void {
++	if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
++		return;
++	}
++	$screen = get_current_screen();
++	if ( ! $screen || 'mba_product' !== $screen->post_type ) {
++		return;
++	}
++	wp_enqueue_media();
++	wp_enqueue_script( 'jquery-ui-sortable' );
++	wp_enqueue_script( 'mba-product-admin', MBA_CORE_URL . 'assets/js/product-admin.js', array( 'jquery', 'jquery-ui-sortable' ), MBA_CORE_VERSION, true );
++	wp_localize_script(
++		'mba-product-admin',
++		'mbaProductAdmin',
++		array(
++			'galleryTitle' => __( 'Choose product gallery images', 'mba-site-core' ),
++			'pdfTitle'     => __( 'Choose technical PDF', 'mba-site-core' ),
++			'finishTitle'  => __( 'Choose finish image', 'mba-site-core' ),
++			'removeImage'  => __( 'Remove image', 'mba-site-core' ),
++			'noPdf'        => __( 'No PDF selected', 'mba-site-core' ),
++		)
++	);
++	wp_enqueue_style( 'mba-product-admin', MBA_CORE_URL . 'assets/css/product-admin.css', array(), MBA_CORE_VERSION );
++}
++add_action( 'admin_enqueue_scripts', 'mba_core_product_admin_assets' );
++
++/**
++ * Read a meta value with a predictable default.
++ *
++ * @param int   $post_id Post ID.
++ * @param string $key Meta key.
++ * @param mixed $default Default value.
++ * @return mixed
++ */
++function mba_core_product_meta_value( int $post_id, string $key, $default = '' ) {
++	$value = get_post_meta( $post_id, $key, true );
++	return '' === $value ? $default : $value;
++}
++
++/**
++ * Render a simple repeatable list of text values.
++ *
++ * @param string        $name Field name.
++ * @param array<string> $values Existing values.
++ * @param string        $placeholder Input placeholder.
++ */
++function mba_core_render_string_repeater( string $name, array $values, string $placeholder ): void {
++	if ( empty( $values ) ) {
++		$values = array( '' );
++	}
++	?>
++	<div class="mba-repeater" data-kind="string">
++		<div class="mba-repeater-rows">
++			<?php foreach ( $values as $value ) : ?>
++				<div class="mba-repeater-row">
++					<input class="widefat" type="text" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $value ); ?>" placeholder="<?php echo esc_attr( $placeholder ); ?>">
++					<button type="button" class="button-link-delete mba-remove-row"><?php esc_html_e( 'Remove', 'mba-site-core' ); ?></button>
++				</div>
++			<?php endforeach; ?>
++		</div>
++		<button type="button" class="button mba-add-row"><?php esc_html_e( 'Add row', 'mba-site-core' ); ?></button>
++	</div>
++	<?php
++}
++
++/**
++ * Render the product editing fields.
++ *
++ * @param WP_Post $post Product post.
++ */
++function mba_core_render_product_meta_box( WP_Post $post ): void {
++	wp_nonce_field( 'mba_save_product_details', 'mba_product_details_nonce' );
++	$gallery      = mba_core_sanitize_id_list( mba_core_product_meta_value( $post->ID, 'mba_gallery', array() ) );
++	$performance  = (array) mba_core_product_meta_value( $post->ID, 'mba_performance_details', array() );
++	$finishes     = (array) mba_core_product_meta_value( $post->ID, 'mba_colors_finishes', array() );
++	$related_faqs = mba_core_sanitize_id_list( mba_core_product_meta_value( $post->ID, 'mba_related_faqs', array() ) );
++	$related_projects = mba_core_sanitize_id_list( mba_core_product_meta_value( $post->ID, 'mba_related_projects', array() ) );
++	?>
++	<div class="mba-product-fields">
++		<p class="description mba-guidance"><strong><?php esc_html_e( 'Required:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Use the core Product title to identify the item. All structured fields below are optional; publish only information that MBA has verified.', 'mba-site-core' ); ?></p>
++		<p class="description mba-guidance"><strong><?php esc_html_e( 'Photo guidance:', 'mba-site-core' ); ?></strong> <?php esc_html_e( 'Cover: 4:3, at least 1600×1200 px. Gallery: JPEG/WebP, preferably 1600 px or wider and under 500 KB per image. Add accurate alt text and captions in the Media Library. Confirm publication consent before using client-property photos.', 'mba-site-core' ); ?></p>
++
++		<div class="mba-field">
++			<label for="mba_short_description"><strong><?php esc_html_e( 'Short description', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label>
++			<textarea class="widefat" rows="3" id="mba_short_description" name="mba_short_description"><?php echo esc_textarea( mba_core_product_meta_value( $post->ID, 'mba_short_description' ) ); ?></textarea>
++		</div>
++
++		<div class="mba-grid-fields">
++			<div class="mba-field"><label><strong><?php esc_html_e( 'Benefits', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label><?php mba_core_render_string_repeater( 'mba_benefits', (array) mba_core_product_meta_value( $post->ID, 'mba_benefits', array() ), __( 'Example: easy daily ventilation', 'mba-site-core' ) ); ?></div>
++			<div class="mba-field"><label><strong><?php esc_html_e( 'Configurations', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label><?php mba_core_render_string_repeater( 'mba_configurations', (array) mba_core_product_meta_value( $post->ID, 'mba_configurations', array() ), __( 'Example: one leaf', 'mba-site-core' ) ); ?></div>
++			<div class="mba-field"><label><strong><?php esc_html_e( 'Glazing options', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label><?php mba_core_render_string_repeater( 'mba_glazing_options', (array) mba_core_product_meta_value( $post->ID, 'mba_glazing_options', array() ), __( 'Only options confirmed by MBA', 'mba-site-core' ) ); ?></div>
++			<div class="mba-field"><label><strong><?php esc_html_e( 'Recommended applications', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label><?php mba_core_render_string_repeater( 'mba_applications', (array) mba_core_product_meta_value( $post->ID, 'mba_applications', array() ), __( 'Example: residential renovation', 'mba-site-core' ) ); ?></div>
++		</div>
++
++		<div class="mba-field">
++			<label for="mba_materials_profiles"><strong><?php esc_html_e( 'Materials and profile systems', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label>
++			<?php wp_editor( (string) mba_core_product_meta_value( $post->ID, 'mba_materials_profiles' ), 'mba_materials_profiles', array( 'textarea_name' => 'mba_materials_profiles', 'textarea_rows' => 5, 'media_buttons' => false ) ); ?>
++		</div>
++
++		<div class="mba-field">
++			<label><strong><?php esc_html_e( 'Colors and finishes', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional image per finish', 'mba-site-core' ); ?></span></label>
++			<div class="mba-finish-rows">
++				<?php
++				if ( empty( $finishes ) ) {
++					$finishes = array( array( 'label' => '', 'image_id' => 0 ) );
++				}
++				?>
++				<?php foreach ( $finishes as $finish ) : $image_id = absint( $finish['image_id'] ?? 0 ); ?>
++					<div class="mba-finish-row mba-repeater-row">
++						<input type="text" name="mba_colors_finishes[label][]" value="<?php echo esc_attr( $finish['label'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Finish label', 'mba-site-core' ); ?>">
++						<input type="hidden" class="mba-finish-image-id" name="mba_colors_finishes[image_id][]" value="<?php echo esc_attr( $image_id ); ?>">
++						<span class="mba-finish-preview"><?php echo $image_id ? wp_kses_post( wp_get_attachment_image( $image_id, 'thumbnail' ) ) : ''; ?></span>
++						<button type="button" class="button mba-choose-finish-image"><?php esc_html_e( 'Choose image', 'mba-site-core' ); ?></button>
++						<button type="button" class="button-link-delete mba-remove-row"><?php esc_html_e( 'Remove', 'mba-site-core' ); ?></button>
++					</div>
++				<?php endforeach; ?>
++			</div>
++			<button type="button" class="button mba-add-finish"><?php esc_html_e( 'Add finish', 'mba-site-core' ); ?></button>
++		</div>
++
++		<div class="mba-field">
++			<label><strong><?php esc_html_e( 'Verified performance details', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional — do not enter estimated or supplier values unless MBA has verified them for this product.', 'mba-site-core' ); ?></span></label>
++			<div class="mba-performance-rows">
++				<?php
++				if ( empty( $performance ) ) {
++					$performance = array( array( 'label' => '', 'value' => '' ) );
++				}
++				?>
++				<?php foreach ( $performance as $row ) : ?>
++					<div class="mba-performance-row mba-repeater-row">
++						<input type="text" name="mba_performance_details[label][]" value="<?php echo esc_attr( $row['label'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Label', 'mba-site-core' ); ?>">
++						<input type="text" name="mba_performance_details[value][]" value="<?php echo esc_attr( $row['value'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Verified value', 'mba-site-core' ); ?>">
++						<button type="button" class="button-link-delete mba-remove-row"><?php esc_html_e( 'Remove', 'mba-site-core' ); ?></button>
++					</div>
++				<?php endforeach; ?>
++			</div>
++			<button type="button" class="button mba-add-performance"><?php esc_html_e( 'Add performance row', 'mba-site-core' ); ?></button>
++		</div>
++
++		<div class="mba-field">
++			<label for="mba_maintenance"><strong><?php esc_html_e( 'Maintenance guidance', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label>
++			<?php wp_editor( (string) mba_core_product_meta_value( $post->ID, 'mba_maintenance' ), 'mba_maintenance', array( 'textarea_name' => 'mba_maintenance', 'textarea_rows' => 4, 'media_buttons' => false ) ); ?>
++		</div>
++
++		<div class="mba-field">
++			<label><strong><?php esc_html_e( 'Gallery', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional; drag thumbnails to reorder.', 'mba-site-core' ); ?></span></label>
++			<input type="hidden" id="mba_gallery" name="mba_gallery" value="<?php echo esc_attr( implode( ',', $gallery ) ); ?>">
++			<ul class="mba-gallery-list">
++				<?php foreach ( $gallery as $image_id ) : ?>
++					<li data-id="<?php echo esc_attr( $image_id ); ?>"><?php echo wp_kses_post( wp_get_attachment_image( $image_id, 'thumbnail' ) ); ?><button type="button" class="button-link-delete mba-gallery-remove" aria-label="<?php esc_attr_e( 'Remove image', 'mba-site-core' ); ?>">×</button></li>
++				<?php endforeach; ?>
++			</ul>
++			<button type="button" class="button mba-gallery-choose"><?php esc_html_e( 'Choose gallery images', 'mba-site-core' ); ?></button>
++		</div>
++
++		<div class="mba-field">
++			<label><strong><?php esc_html_e( 'Technical document', 'mba-site-core' ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional PDF only; use an approved MBA/supplier document.', 'mba-site-core' ); ?></span></label>
++			<?php $document_id = absint( mba_core_product_meta_value( $post->ID, 'mba_technical_document', 0 ) ); ?>
++			<input type="hidden" id="mba_technical_document" name="mba_technical_document" value="<?php echo esc_attr( $document_id ); ?>">
++			<span class="mba-document-label"><?php echo $document_id ? esc_html( get_the_title( $document_id ) ) : esc_html__( 'No PDF selected', 'mba-site-core' ); ?></span>
++			<button type="button" class="button mba-document-choose"><?php esc_html_e( 'Choose PDF', 'mba-site-core' ); ?></button>
++			<button type="button" class="button-link-delete mba-document-remove"><?php esc_html_e( 'Remove', 'mba-site-core' ); ?></button>
++		</div>
++
++		<div class="mba-grid-fields">
++			<div class="mba-field"><?php mba_core_render_relationship_select( 'mba_related_faqs', __( 'Related FAQs', 'mba-site-core' ), 'mba_faq', $related_faqs ); ?></div>
++			<div class="mba-field"><?php mba_core_render_relationship_select( 'mba_related_projects', __( 'Related projects', 'mba-site-core' ), 'mba_project', $related_projects ); ?></div>
++		</div>
++
++		<div class="mba-grid-fields mba-compact-fields">
++			<div class="mba-field"><label><input type="checkbox" name="mba_featured" value="1" <?php checked( (bool) mba_core_product_meta_value( $post->ID, 'mba_featured', false ) ); ?>> <strong><?php esc_html_e( 'Feature this product', 'mba-site-core' ); ?></strong></label></div>
++			<div class="mba-field"><label for="mba_display_order"><strong><?php esc_html_e( 'Display order', 'mba-site-core' ); ?></strong></label><input type="number" min="0" max="9999" step="1" id="mba_display_order" name="mba_display_order" value="<?php echo esc_attr( absint( mba_core_product_meta_value( $post->ID, 'mba_display_order', 0 ) ) ); ?>"></div>
++		</div>
++	</div>
++	<?php
++}
++
++/**
++ * Render a relationship multi-select.
++ *
++ * @param string     $name Field name.
++ * @param string     $label Label.
++ * @param string     $post_type Target post type.
++ * @param array<int> $selected Selected IDs.
++ */
++function mba_core_render_relationship_select( string $name, string $label, string $post_type, array $selected ): void {
++	$items = get_posts(
++		array(
++			'post_type'      => $post_type,
++			'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
++			'posts_per_page' => 200,
++			'orderby'        => 'title',
++			'order'          => 'ASC',
++		)
++	);
++	?>
++	<label for="<?php echo esc_attr( $name ); ?>"><strong><?php echo esc_html( $label ); ?></strong> <span class="mba-optional"><?php esc_html_e( 'Optional', 'mba-site-core' ); ?></span></label>
++	<select class="widefat" multiple size="6" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>[]">
++		<?php foreach ( $items as $item ) : ?>
++			<option value="<?php echo esc_attr( $item->ID ); ?>" <?php selected( in_array( $item->ID, $selected, true ) ); ?>><?php echo esc_html( $item->post_title ?: sprintf(
++					/* translators: %d: WordPress post ID. */
++					__( '(untitled #%d)', 'mba-site-core' ),
++					$item->ID
++				) ); ?></option>
++		<?php endforeach; ?>
++	</select>
++	<?php
++}
++
++/**
++ * Build object rows from parallel POST arrays.
++ *
++ * @param array<string,mixed> $raw Posted array.
++ * @param array<string>       $keys Row keys.
++ * @return array<array<string,mixed>>
++ */
++function mba_core_zip_rows( array $raw, array $keys ): array {
++	$rows  = array();
++	$count = 0;
++	foreach ( $keys as $key ) {
++		$count = max( $count, count( (array) ( $raw[ $key ] ?? array() ) ) );
++	}
++	for ( $index = 0; $index < $count; $index++ ) {
++		$row = array();
++		foreach ( $keys as $key ) {
++			$row[ $key ] = $raw[ $key ][ $index ] ?? '';
++		}
++		$rows[] = $row;
++	}
++	return $rows;
++}
++
++/**
++ * Validate one target relationship list.
++ *
++ * @param mixed  $raw Raw posted IDs.
++ * @param string $post_type Expected target type.
++ * @return array<int>
++ */
++function mba_core_validate_relationship_ids( $raw, string $post_type ): array {
++	$valid = array();
++	foreach ( mba_core_sanitize_id_list( wp_unslash( (array) $raw ) ) as $post_id ) {
++		if ( $post_type === get_post_type( $post_id ) ) {
++			$valid[] = $post_id;
++		}
++	}
++	return $valid;
++}
++
++/**
++ * Synchronize product backlinks on related content.
++ *
++ * @param int        $product_id Product ID.
++ * @param string     $target_type Target post type.
++ * @param array<int> $old_ids Previous targets.
++ * @param array<int> $new_ids New targets.
++ */
++function mba_core_sync_product_backlinks( int $product_id, string $target_type, array $old_ids, array $new_ids ): void {
++	foreach ( array_unique( array_merge( $old_ids, $new_ids ) ) as $target_id ) {
++		if ( $target_type !== get_post_type( $target_id ) ) {
++			continue;
++		}
++		$products = mba_core_sanitize_id_list( get_post_meta( $target_id, 'mba_related_products', true ) );
++		if ( in_array( $target_id, $new_ids, true ) ) {
++			$products[] = $product_id;
++			$products   = array_values( array_unique( $products ) );
++		} else {
++			$products = array_values( array_diff( $products, array( $product_id ) ) );
++		}
++		update_post_meta( $target_id, 'mba_related_products', $products );
++	}
++}
++
++/**
++ * Store and validate product fields.
++ *
++ * @param int     $post_id Product post ID.
++ * @param WP_Post $post    Product post.
++ */
++function mba_core_save_product_details( int $post_id, WP_Post $post ): void {
++	if ( 'mba_product' !== $post->post_type || ! isset( $_POST['mba_product_details_nonce'] ) ) {
++		return;
++	}
++	$nonce = sanitize_text_field( wp_unslash( $_POST['mba_product_details_nonce'] ) );
++	if ( ! wp_verify_nonce( $nonce, 'mba_save_product_details' ) || ! current_user_can( 'edit_post', $post_id ) || wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
++		return;
++	}
++
++	$text_fields = array( 'mba_short_description' => 'sanitize_textarea_field' );
++	foreach ( $text_fields as $key => $sanitize ) {
++		update_post_meta( $post_id, $key, call_user_func( $sanitize, wp_unslash( $_POST[ $key ] ?? '' ) ) );
++	}
++	foreach ( array( 'mba_materials_profiles', 'mba_maintenance' ) as $key ) {
++		update_post_meta( $post_id, $key, wp_kses_post( wp_unslash( $_POST[ $key ] ?? '' ) ) );
++	}
++	foreach ( array( 'mba_benefits', 'mba_configurations', 'mba_glazing_options', 'mba_applications' ) as $key ) {
++		update_post_meta( $post_id, $key, mba_core_sanitize_string_list( wp_unslash( (array) ( $_POST[ $key ] ?? array() ) ) ) );
++	}
++
++	$performance_raw = wp_unslash( (array) ( $_POST['mba_performance_details'] ?? array() ) );
++	$finish_raw      = wp_unslash( (array) ( $_POST['mba_colors_finishes'] ?? array() ) );
++	update_post_meta( $post_id, 'mba_performance_details', mba_core_sanitize_performance_details( mba_core_zip_rows( $performance_raw, array( 'label', 'value' ) ) ) );
++	update_post_meta( $post_id, 'mba_colors_finishes', mba_core_sanitize_colors_finishes( mba_core_zip_rows( $finish_raw, array( 'label', 'image_id' ) ) ) );
++
++	$gallery = array();
++	foreach ( array_filter( array_map( 'absint', explode( ',', (string) wp_unslash( $_POST['mba_gallery'] ?? '' ) ) ) ) as $image_id ) {
++		if ( wp_attachment_is_image( $image_id ) ) {
++			$gallery[] = $image_id;
++		}
++	}
++	update_post_meta( $post_id, 'mba_gallery', array_values( array_unique( $gallery ) ) );
++
++	$document_id = absint( wp_unslash( $_POST['mba_technical_document'] ?? 0 ) );
++	if ( $document_id && 'application/pdf' !== get_post_mime_type( $document_id ) ) {
++		mba_core_set_product_admin_error( __( 'The technical document was rejected because it is not a PDF.', 'mba-site-core' ) );
++	} else {
++		update_post_meta( $post_id, 'mba_technical_document', $document_id );
++	}
++
++	update_post_meta( $post_id, 'mba_featured', isset( $_POST['mba_featured'] ) );
++	update_post_meta( $post_id, 'mba_display_order', min( 9999, absint( wp_unslash( $_POST['mba_display_order'] ?? 0 ) ) ) );
++
++	$old_faqs     = mba_core_sanitize_id_list( get_post_meta( $post_id, 'mba_related_faqs', true ) );
++	$old_projects = mba_core_sanitize_id_list( get_post_meta( $post_id, 'mba_related_projects', true ) );
++	$new_faqs     = mba_core_validate_relationship_ids( $_POST['mba_related_faqs'] ?? array(), 'mba_faq' );
++	$new_projects = mba_core_validate_relationship_ids( $_POST['mba_related_projects'] ?? array(), 'mba_project' );
++	update_post_meta( $post_id, 'mba_related_faqs', $new_faqs );
++	update_post_meta( $post_id, 'mba_related_projects', $new_projects );
++	mba_core_sync_product_backlinks( $post_id, 'mba_faq', $old_faqs, $new_faqs );
++	mba_core_sync_product_backlinks( $post_id, 'mba_project', $old_projects, $new_projects );
++}
++add_action( 'save_post_mba_product', 'mba_core_save_product_details', 10, 2 );
++
++/**
++ * Persist a user-specific validation message across the post-save redirect.
++ *
++ * @param string $message Validation message.
++ */
++function mba_core_set_product_admin_error( string $message ): void {
++	set_transient( 'mba_product_error_' . get_current_user_id(), $message, MINUTE_IN_SECONDS );
++}
++
++/**
++ * Display product validation errors.
++ */
++function mba_core_product_admin_notices(): void {
++	$key     = 'mba_product_error_' . get_current_user_id();
++	$message = get_transient( $key );
++	if ( ! $message ) {
++		return;
++	}
++	delete_transient( $key );
++	printf( '<div class="notice notice-error is-dismissible"><p>%s</p></div>', esc_html( $message ) );
++}
++add_action( 'admin_notices', 'mba_core_product_admin_notices' );
++
++/**
++ * Add concrete cover-image guidance to the core featured image box.
++ *
++ * @param string $content Existing featured image control markup.
++ * @param int    $post_id Current post ID.
++ * @return string
++ */
++function mba_core_featured_image_guidance( string $content, int $post_id ): string {
++	if ( 'mba_product' !== get_post_type( $post_id ) ) {
++		return $content;
++	}
++	$content .= '<p class="description">' . esc_html__( 'Recommended cover: 4:3, minimum 1600×1200 px, JPEG/WebP, target under 500 KB. Set meaningful alt text and confirm publication rights/consent.', 'mba-site-core' ) . '</p>';
++	return $content;
++}
++add_filter( 'admin_post_thumbnail_html', 'mba_core_featured_image_guidance', 10, 2 );
++
++/**
++ * Improve the Products list with useful editorial columns.
++ *
++ * @param array<string,string> $columns Existing columns.
++ * @return array<string,string>
++ */
++function mba_core_product_columns( array $columns ): array {
++	$columns['mba_cover']    = __( 'Cover', 'mba-site-core' );
++	$columns['mba_featured'] = __( 'Featured', 'mba-site-core' );
++	$columns['mba_order']    = __( 'Order', 'mba-site-core' );
++	return $columns;
++}
++add_filter( 'manage_mba_product_posts_columns', 'mba_core_product_columns' );
++
++/**
++ * Render custom Products columns.
++ *
++ * @param string $column  Column key.
++ * @param int    $post_id Product post ID.
++ */
++function mba_core_product_column_content( string $column, int $post_id ): void {
++	if ( 'mba_cover' === $column ) {
++		echo wp_kses_post( get_the_post_thumbnail( $post_id, array( 64, 48 ) ) ?: '—' );
++	} elseif ( 'mba_featured' === $column ) {
++		echo get_post_meta( $post_id, 'mba_featured', true ) ? esc_html__( 'Yes', 'mba-site-core' ) : '—';
++	} elseif ( 'mba_order' === $column ) {
++		echo esc_html( (string) absint( get_post_meta( $post_id, 'mba_display_order', true ) ) );
++	}
++}
++add_action( 'manage_mba_product_posts_custom_column', 'mba_core_product_column_content', 10, 2 );
+diff --git a/wp-content/plugins/mba-site-core/includes/sample-media.php b/wp-content/plugins/mba-site-core/includes/sample-media.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a8c52d119f82240e9dcbfc33064465c6a8d6baa
+--- /dev/null
++++ b/wp-content/plugins/mba-site-core/includes/sample-media.php
+@@ -0,0 +1,58 @@
++<?php
++/**
++ * Temporary/sample content launch safety checks.
++ *
++ * @package MBA_Site_Core
++ */
++
++if ( ! defined( 'ABSPATH' ) ) {
++	exit;
++}
++
++/**
++ * Detect temporary sample catalogue/media markers before launch.
++ *
++ * @return bool
++ */
++function mba_core_has_temporary_content(): bool {
++	$query = new WP_Query(
++		array(
++			'post_type'      => array( 'mba_product', 'mba_project', 'attachment' ),
++			'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'inherit' ),
++			'posts_per_page' => 1,
++			'fields'         => 'ids',
++			'meta_query'     => array(
++				'relation' => 'OR',
++				array( 'key' => 'mba_sample_content', 'value' => '1' ),
++				array( 'key' => 'mba_temporary_media_source', 'compare' => 'EXISTS' ),
++			),
++		)
++	);
++	return $query->have_posts();
++}
++
++/**
++ * Add a direct Site Health test that blocks a clean launch status while temporary media remains.
++ *
++ * @param array<string,mixed> $tests Existing tests.
++ * @return array<string,mixed>
++ */
++function mba_core_site_health_tests( array $tests ): array {
++	$tests['direct']['mba_temporary_content'] = array(
++		'label' => __( 'MBA temporary catalogue/media', 'mba-site-core' ),
++		'test'  => static function (): array {
++			$temporary = mba_core_has_temporary_content();
++			return array(
++				'label'       => $temporary ? __( 'Temporary MBA sample content or media is still configured', 'mba-site-core' ) : __( 'No temporary MBA sample media is configured', 'mba-site-core' ),
++				'status'      => $temporary ? 'critical' : 'good',
++				'badge'       => array( 'label' => __( 'MBA content', 'mba-site-core' ), 'color' => 'blue' ),
++				'description' => $temporary
++					? '<p>' . esc_html__( 'Replace all temporary catalogue/media items with approved MBA content before production launch. See docs/sample-media-sources.md.', 'mba-site-core' ) . '</p>'
++					: '<p>' . esc_html__( 'The launch check found no content marked as temporary.', 'mba-site-core' ) . '</p>',
++				'test'        => 'mba_temporary_content',
++			);
++		},
++	);
++	return $tests;
++}
++add_filter( 'site_status_tests', 'mba_core_site_health_tests' );
+diff --git a/wp-content/plugins/mba-site-core/includes/settings.php b/wp-content/plugins/mba-site-core/includes/settings.php
+index 038adf98dfd0c89c717306d1d8916de17d027531..4aef29ac2a343a85f0107e0ecdb682ce008971a0 100644
+--- a/wp-content/plugins/mba-site-core/includes/settings.php
++++ b/wp-content/plugins/mba-site-core/includes/settings.php
+@@ -62,6 +62,9 @@ add_action( 'admin_init', 'mba_core_register_settings' );
+ 
+ /**
+  * Sanitize every stored setting.
++ *
++ * @param mixed $value Submitted settings object.
++ * @return array<string,string>
+  */
+ function mba_core_sanitize_settings( $value ): array {
+ 	$output = array();
+@@ -73,6 +76,8 @@ function mba_core_sanitize_settings( $value ): array {
+ 
+ /**
+  * Render one settings input.
++ *
++ * @param array<string,string> $args Field arguments.
+  */
+ function mba_core_render_text_setting( array $args ): void {
+ 	$options = get_option( 'mba_site_settings', array() );
+diff --git a/wp-content/plugins/mba-site-core/mba-site-core.php b/wp-content/plugins/mba-site-core/mba-site-core.php
+index 8f20bdc830116b60194b171ac9d8dcb52a07fc9e..ab6aecdcb70618fb461da9f22aaf401c233b8f47 100644
+--- a/wp-content/plugins/mba-site-core/mba-site-core.php
++++ b/wp-content/plugins/mba-site-core/mba-site-core.php
+@@ -2,10 +2,10 @@
+ /**
+  * Plugin Name: MBA Site Core
+  * Description: Durable content types and business settings for MBA Menuiseries Belhaj Ali.
+- * Version: 0.1.0
++ * Version: 0.2.0
+  * Author: MBA Menuiseries
+  * Text Domain: mba-site-core
+- * Requires at least: 6.6
++ * Requires at least: 7.0
+  * Requires PHP: 8.1
+  */
+ 
+@@ -13,20 +13,31 @@ if ( ! defined( 'ABSPATH' ) ) {
+ 	exit;
+ }
+ 
+-define( 'MBA_CORE_VERSION', '0.1.0' );
++define( 'MBA_CORE_VERSION', '0.2.0' );
+ define( 'MBA_CORE_PATH', plugin_dir_path( __FILE__ ) );
++define( 'MBA_CORE_URL', plugin_dir_url( __FILE__ ) );
+ 
+ require_once MBA_CORE_PATH . 'includes/content-types.php';
+ require_once MBA_CORE_PATH . 'includes/meta-fields.php';
++require_once MBA_CORE_PATH . 'includes/product-admin.php';
++require_once MBA_CORE_PATH . 'includes/sample-media.php';
+ require_once MBA_CORE_PATH . 'includes/settings.php';
+ 
++/**
++ * Load translations from the plugin languages directory when available.
++ */
++function mba_core_load_textdomain(): void {
++	load_plugin_textdomain( 'mba-site-core', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
++}
++add_action( 'init', 'mba_core_load_textdomain', 1 );
++
+ register_activation_hook(
+ 	__FILE__,
+ 	static function (): void {
+ 		mba_core_register_content_types();
++		mba_core_register_meta_fields();
+ 		flush_rewrite_rules();
+ 	}
+ );
+ 
+ register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
+-
+diff --git a/wp-content/themes/mba-menuiseries/assets/css/site.css b/wp-content/themes/mba-menuiseries/assets/css/site.css
+index 46d8dc1a94f7fd21f3be439dc58a54a6ef9ac144..2608553afbc79ddf43d0fcc908e8d8d813e64cf5 100644
+--- a/wp-content/themes/mba-menuiseries/assets/css/site.css
++++ b/wp-content/themes/mba-menuiseries/assets/css/site.css
+@@ -1,31 +1,71 @@
+ :root {
+ 	--mba-border: #d9dfdd;
+ 	--mba-shadow: 0 18px 45px rgb(20 32 31 / 10%);
++	--mba-focus: #9b5f25;
++	--mba-radius-sm: 2px;
++	--mba-radius-md: 6px;
++	--mba-section-space: clamp(3rem, 7vw, 7rem);
+ }
+ 
+ html { scroll-behavior: smooth; }
+-body { margin: 0; }
+-img { height: auto; }
+-a:focus-visible,
+-button:focus-visible,
+-input:focus-visible,
+-textarea:focus-visible,
+-select:focus-visible {
+-	outline: 3px solid #b67435;
++body { margin: 0; min-width: 320px; }
++img { height: auto; max-width: 100%; }
++:where(a, button, input, textarea, select, summary):focus-visible {
++	outline: 3px solid var(--mba-focus);
+ 	outline-offset: 3px;
+ }
+-.wp-site-blocks { min-height: 100vh; }
++.wp-site-blocks { min-height: 100vh; overflow-x: clip; }
+ .mba-site-header { border-bottom: 1px solid var(--mba-border); }
++
++.mba-section { padding-block: var(--mba-section-space); }
++.mba-section--compact { padding-block: clamp(2rem, 4vw, 4rem); }
++.mba-stack > * + * { margin-block-start: var(--wp--preset--spacing--30, 1.25rem); }
++.mba-cluster { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; }
++.mba-grid { display: grid; gap: clamp(1rem, 2vw, 2rem); grid-template-columns: minmax(0, 1fr); }
++.mba-grid--cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
++.mba-eyebrow { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
++
+ .mba-card {
++	background: var(--wp--preset--color--white, #fff);
+ 	border: 1px solid var(--mba-border);
++	border-radius: var(--mba-radius-sm);
+ 	box-shadow: var(--mba-shadow);
+ 	overflow: hidden;
+ }
+-.mba-card img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+-.mba-eyebrow { letter-spacing: 0.12em; text-transform: uppercase; }
++.mba-card__body { padding: clamp(1rem, 2.2vw, 1.5rem); }
++.mba-media,
++.mba-card .wp-block-image { aspect-ratio: 4 / 3; overflow: hidden; background: var(--wp--preset--color--mist, #eef2f1); }
++.mba-media > img,
++.mba-card .wp-block-image img,
++.mba-card > img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
++
++.mba-button,
++.wp-element-button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
++.mba-button--secondary { background: transparent; border: 1px solid currentColor; color: var(--wp--preset--color--ink, #14201f); }
++
++@media (min-width: 430px) {
++	.mba-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++}
++
++@media (min-width: 768px) {
++	.mba-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
++	.mba-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
++}
++
++@media (min-width: 1024px) {
++	.mba-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
++}
++
++@media (min-width: 1440px) {
++	.mba-section { padding-block: clamp(5rem, 6vw, 8rem); }
++}
+ 
+ @media (prefers-reduced-motion: reduce) {
+ 	html { scroll-behavior: auto; }
+-	*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
++	*, *::before, *::after {
++		animation-duration: 0.01ms !important;
++		animation-iteration-count: 1 !important;
++		scroll-behavior: auto !important;
++		transition-duration: 0.01ms !important;
++	}
+ }
+-
+diff --git a/wp-content/themes/mba-menuiseries/functions.php b/wp-content/themes/mba-menuiseries/functions.php
+index b2fce5750fecdbeef235c52f3a4be24c1ead78bc..a089b8dcb917d7e45735fd12eb3af038b8b7c1a3 100644
+--- a/wp-content/themes/mba-menuiseries/functions.php
++++ b/wp-content/themes/mba-menuiseries/functions.php
+@@ -13,10 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
+  * Theme features.
+  */
+ function mba_theme_setup(): void {
++	load_theme_textdomain( 'mba-menuiseries', get_template_directory() . '/languages' );
+ 	add_theme_support( 'wp-block-styles' );
+ 	add_theme_support( 'responsive-embeds' );
+ 	add_theme_support( 'editor-styles' );
+ 	add_editor_style( 'assets/css/site.css' );
++	add_image_size( 'mba-card', 960, 720, true );
++	add_image_size( 'mba-hero', 1920, 1200, true );
+ }
+ add_action( 'after_setup_theme', 'mba_theme_setup' );
+ 
+@@ -29,8 +32,7 @@ function mba_theme_enqueue_assets(): void {
+ 		'mba-theme',
+ 		get_theme_file_uri( 'assets/css/site.css' ),
+ 		array(),
+-		file_exists( $path ) ? (string) filemtime( $path ) : '0.1.0'
++		file_exists( $path ) ? (string) filemtime( $path ) : '0.2.0'
+ 	);
+ }
+ add_action( 'wp_enqueue_scripts', 'mba_theme_enqueue_assets' );
+-
+diff --git a/wp-content/themes/mba-menuiseries/patterns/media-card.php b/wp-content/themes/mba-menuiseries/patterns/media-card.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..1859afedbcb459f9a1c68f53f8789f9a44402f85
+--- /dev/null
++++ b/wp-content/themes/mba-menuiseries/patterns/media-card.php
+@@ -0,0 +1,21 @@
++<?php
++/**
++ * Title: MBA media card
++ * Slug: mba-menuiseries/media-card
++ * Categories: featured
++ * Inserter: yes
++ */
++?>
++<!-- wp:group {"className":"mba-card","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-card"><!-- wp:group {"className":"mba-media","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-media"></div>
++<!-- /wp:group -->
++<!-- wp:group {"className":"mba-card__body mba-stack","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-card__body mba-stack"><!-- wp:heading {"level":3} -->
++<h3 class="wp-block-heading"><?php echo esc_html_x( 'Editable card title', 'Pattern placeholder', 'mba-menuiseries' ); ?></h3>
++<!-- /wp:heading -->
++<!-- wp:paragraph -->
++<p><?php echo esc_html_x( 'Add approved text and owner-managed media here.', 'Pattern placeholder', 'mba-menuiseries' ); ?></p>
++<!-- /wp:paragraph --></div>
++<!-- /wp:group --></div>
++<!-- /wp:group -->
+diff --git a/wp-content/themes/mba-menuiseries/patterns/section-heading.php b/wp-content/themes/mba-menuiseries/patterns/section-heading.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..bb4c69d95d0cb807da635e81e847afe590e15239
+--- /dev/null
++++ b/wp-content/themes/mba-menuiseries/patterns/section-heading.php
+@@ -0,0 +1,19 @@
++<?php
++/**
++ * Title: MBA section heading
++ * Slug: mba-menuiseries/section-heading
++ * Categories: text
++ * Inserter: yes
++ */
++?>
++<!-- wp:group {"className":"mba-stack","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-stack"><!-- wp:paragraph {"className":"mba-eyebrow"} -->
++<p class="mba-eyebrow"><?php echo esc_html_x( 'Section label', 'Pattern placeholder', 'mba-menuiseries' ); ?></p>
++<!-- /wp:paragraph -->
++<!-- wp:heading -->
++<h2 class="wp-block-heading"><?php echo esc_html_x( 'Editable section heading', 'Pattern placeholder', 'mba-menuiseries' ); ?></h2>
++<!-- /wp:heading -->
++<!-- wp:paragraph -->
++<p><?php echo esc_html_x( 'Replace this neutral placeholder with approved MBA content.', 'Pattern placeholder', 'mba-menuiseries' ); ?></p>
++<!-- /wp:paragraph --></div>
++<!-- /wp:group -->
+diff --git a/wp-content/themes/mba-menuiseries/theme.json b/wp-content/themes/mba-menuiseries/theme.json
+index f45e043903be94ac9d02830d44f9bb8a343c9648..7abbbf54c482eff557a08cf7d1d926e71e7b87bc 100644
+--- a/wp-content/themes/mba-menuiseries/theme.json
++++ b/wp-content/themes/mba-menuiseries/theme.json
+@@ -5,33 +5,55 @@
+     "appearanceTools": true,
+     "layout": {
+       "contentSize": "760px",
+-      "wideSize": "1200px"
++      "wideSize": "1240px"
++    },
++    "border": {
++      "color": true,
++      "radius": true,
++      "style": true,
++      "width": true
+     },
+     "color": {
+       "defaultPalette": false,
++      "defaultGradients": false,
+       "palette": [
+         { "slug": "ink", "name": "Ink", "color": "#14201f" },
+         { "slug": "aluminium", "name": "Aluminium", "color": "#687473" },
+         { "slug": "mist", "name": "Mist", "color": "#eef2f1" },
++        { "slug": "sand", "name": "Sand", "color": "#f7f4ef" },
+         { "slug": "white", "name": "White", "color": "#ffffff" },
+-        { "slug": "accent", "name": "Accent", "color": "#b67435" }
++        { "slug": "accent", "name": "Accent", "color": "#9b5f25" }
+       ]
+     },
+     "spacing": {
+-      "units": ["px", "rem", "vw"],
++      "units": ["px", "rem", "%", "vw"],
+       "spacingSizes": [
++        { "slug": "10", "size": "0.5rem", "name": "XS" },
+         { "slug": "20", "size": "0.75rem", "name": "S" },
+         { "slug": "30", "size": "1.25rem", "name": "M" },
+         { "slug": "40", "size": "2rem", "name": "L" },
+-        { "slug": "50", "size": "clamp(3rem, 6vw, 6rem)", "name": "XL" }
++        { "slug": "50", "size": "clamp(3rem, 6vw, 5rem)", "name": "XL" },
++        { "slug": "60", "size": "clamp(4rem, 9vw, 8rem)", "name": "2XL" }
+       ]
+     },
+     "typography": {
+       "fluid": true,
+       "fontFamilies": [
+-        { "slug": "sans", "name": "Sans", "fontFamily": "Inter, system-ui, sans-serif" },
+-        { "slug": "display", "name": "Display", "fontFamily": "Georgia, serif" }
++        { "slug": "sans", "name": "Sans", "fontFamily": "Inter, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" },
++        { "slug": "display", "name": "Display", "fontFamily": "Georgia, \"Times New Roman\", serif" }
++      ],
++      "fontSizes": [
++        { "slug": "small", "name": "Small", "size": "0.875rem" },
++        { "slug": "medium", "name": "Body", "size": "1rem" },
++        { "slug": "large", "name": "Large", "size": "clamp(1.125rem, 1rem + 0.5vw, 1.375rem)" },
++        { "slug": "x-large", "name": "Heading", "size": "clamp(2rem, 1.5rem + 2vw, 3.5rem)" },
++        { "slug": "xx-large", "name": "Display", "size": "clamp(2.75rem, 2rem + 4vw, 5.5rem)" }
+       ]
++    },
++    "custom": {
++      "radius": { "small": "2px", "medium": "6px" },
++      "focus": { "width": "3px", "offset": "3px" },
++      "mediaRatio": "4 / 3"
+     }
+   },
+   "styles": {
+@@ -42,20 +64,24 @@
+     "spacing": { "blockGap": "1.5rem" },
+     "typography": {
+       "fontFamily": "var:preset|font-family|sans",
+-      "fontSize": "1rem",
++      "fontSize": "var:preset|font-size|medium",
+       "lineHeight": "1.65"
+     },
+     "elements": {
+       "button": {
+-        "border": { "radius": "2px" },
++        "border": { "radius": "var:custom|radius|small" },
+         "color": { "background": "var:preset|color|ink", "text": "var:preset|color|white" },
+         "spacing": { "padding": { "top": "0.8rem", "right": "1.25rem", "bottom": "0.8rem", "left": "1.25rem" } },
+-        "typography": { "fontWeight": "650" }
++        "typography": { "fontWeight": "650", "lineHeight": "1.2" }
+       },
+       "heading": {
+         "typography": { "fontFamily": "var:preset|font-family|display", "fontWeight": "500", "lineHeight": "1.12" }
+       },
+       "link": { "color": { "text": "var:preset|color|ink" } }
++    },
++    "blocks": {
++      "core/image": { "border": { "radius": "var:custom|radius|small" } },
++      "core/separator": { "color": { "text": "var:preset|color|aluminium" } }
+     }
+   },
+   "templateParts": [
+@@ -63,4 +89,3 @@
+     { "name": "footer", "title": "Footer", "area": "footer" }
+   ]
+ }
+-

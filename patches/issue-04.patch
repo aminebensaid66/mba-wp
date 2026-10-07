@@ -1,0 +1,407 @@
+diff --git a/bin/smoke-wordpress.sh b/bin/smoke-wordpress.sh
+index f8ef0f02b383742ffc5e639d544296f537145f80..8d3dc3177d755402efeaca7daa74262f94126926 100755
+--- a/bin/smoke-wordpress.sh
++++ b/bin/smoke-wordpress.sh
+@@ -33,4 +33,14 @@ if docker compose exec -T wordpress sh -lc 'test -f /var/www/html/wp-content/deb
+   exit 1
+ fi
+ 
+-echo "Smoke test passed: activation, product/media creation, restart persistence, and PHP warning scan."
++inactive_theme="$(run_wp theme list --status=inactive --field=name | head -n 1 || true)"
++if [ -n "$inactive_theme" ]; then
++  run_wp theme activate "$inactive_theme" >/dev/null
++  run_wp post-type get mba_product --field=name | grep -qx 'mba_product'
++  run_wp post-type get mba_project --field=name | grep -qx 'mba_project'
++  run_wp theme activate mba-menuiseries >/dev/null
++else
++  echo "No inactive bundled theme was available; theme-independence runtime switch was skipped." >&2
++fi
++
++echo "Smoke test passed: activation, product/media creation, restart persistence, PHP warning scan, and theme independence when an inactive bundled theme is available."
+diff --git a/composer.json b/composer.json
+index ffbc7474869e3e7b5915fee255504715ac6345f8..8c8932f6f415cd953c29a653bffe93eddc8c234f 100644
+--- a/composer.json
++++ b/composer.json
+@@ -25,8 +25,10 @@
+       "@phpcs",
+       "@phpstan",
+       "@test:theme",
++      "@test:content-types",
+       "@test:lint-failure"
+     ],
+-    "test:theme": "@php tests/theme/theme-foundation.php"
++    "test:theme": "@php tests/theme/theme-foundation.php",
++    "test:content-types": "@php tests/php/content-types-test.php"
+   }
+ }
+diff --git a/docs/testing.md b/docs/testing.md
+index 19c95abf2ca76ffb57178c77cfc77d3aca1b79be..1a0e838de57eb0a82efc1c35540dc93c930d67c2 100644
+--- a/docs/testing.md
++++ b/docs/testing.md
+@@ -44,3 +44,9 @@ Quality tools exclude generated/dependency/state directories: `vendor/`, `node_m
+ `composer check` also runs `tests/theme/theme-foundation.php`, which guards centralized theme tokens, all required responsive breakpoints, minimum touch-target treatment, reduced-motion handling, flexible image cropping, and the absence of a fixed viewport minimum that would block zoom/reflow.
+ 
+ Manual acceptance still requires rendering representative content at 360, 390/430, 768, 1024, and 1440 px and at 200% browser zoom. Check keyboard focus, portrait/landscape uploads, text reflow, and reduced-motion behavior in a real WordPress/browser environment; do not treat the static assertions as a substitute for that review.
++
++## Content-type verification (issue #4)
++
++`composer check` runs `tests/php/content-types-test.php`. It asserts all five owner-facing post types, REST/Gutenberg support, normal editor capability mapping, revisions, public product/project archives, private FAQ/testimonial/partner behavior, required taxonomies, and the absence of rewrite flushing during normal `init` registration.
++
++The Docker smoke test additionally verifies that the content types remain registered while another installed theme is active, then restores MBA Menuiseries. This demonstrates that durable business content is plugin-owned rather than theme-owned.
+diff --git a/tests/php/content-types-test.php b/tests/php/content-types-test.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..25db6f00171992835eebf6d4a5caa8a22f5e76b1
+--- /dev/null
++++ b/tests/php/content-types-test.php
+@@ -0,0 +1,63 @@
++<?php
++/**
++ * Dependency-free registration contract tests for issue #4.
++ */
++
++define( 'ABSPATH', __DIR__ );
++
++$GLOBALS['mba_test_post_types'] = array();
++$GLOBALS['mba_test_taxonomies'] = array();
++
++function __( $text, $domain = null ) { // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralDomain
++	return $text;
++}
++function add_action( $hook, $callback ) {
++	$GLOBALS['mba_test_actions'][ $hook ][] = $callback;
++}
++function register_post_type( $name, $args ) {
++	$GLOBALS['mba_test_post_types'][ $name ] = $args;
++}
++function register_taxonomy( $name, $object_type, $args ) {
++	$GLOBALS['mba_test_taxonomies'][ $name ] = array( 'object_type' => $object_type, 'args' => $args );
++}
++
++require dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/content-types.php';
++mba_core_register_content_types();
++
++$fail = static function ( string $message ): void {
++	fwrite( STDERR, $message . PHP_EOL );
++	exit( 1 );
++};
++
++$expected = array( 'mba_product', 'mba_project', 'mba_faq', 'mba_testimonial', 'mba_partner' );
++foreach ( $expected as $type ) {
++	isset( $GLOBALS['mba_test_post_types'][ $type ] ) || $fail( "Missing post type {$type}" );
++	$args = $GLOBALS['mba_test_post_types'][ $type ];
++	true === $args['show_ui'] || $fail( "{$type} must be owner-editable" );
++	true === $args['show_in_rest'] || $fail( "{$type} must support REST/Gutenberg" );
++	true === $args['map_meta_cap'] || $fail( "{$type} must map normal editor post capabilities" );
++	in_array( 'revisions', $args['supports'], true ) || $fail( "{$type} must preserve revisions" );
++	isset( $args['labels']['add_new_item'], $args['labels']['edit_item'], $args['labels']['all_items'] ) || $fail( "{$type} labels incomplete" );
++}
++
++$product = $GLOBALS['mba_test_post_types']['mba_product'];
++$project = $GLOBALS['mba_test_post_types']['mba_project'];
++true === $product['public'] && 'produits' === $product['has_archive'] || $fail( 'Product public archive mismatch.' );
++true === $project['public'] && 'realisations' === $project['has_archive'] || $fail( 'Project public archive mismatch.' );
++
++foreach ( array( 'mba_faq', 'mba_testimonial', 'mba_partner' ) as $private_type ) {
++	$args = $GLOBALS['mba_test_post_types'][ $private_type ];
++	false === $args['public'] || $fail( "{$private_type} must not expose public singles" );
++	false === $args['publicly_queryable'] || $fail( "{$private_type} must not be publicly queryable" );
++	false === $args['has_archive'] || $fail( "{$private_type} must not expose an archive" );
++}
++
++foreach ( array( 'mba_product_category', 'mba_application_type', 'mba_project_type', 'mba_project_location', 'mba_faq_category' ) as $taxonomy ) {
++	isset( $GLOBALS['mba_test_taxonomies'][ $taxonomy ] ) || $fail( "Missing taxonomy {$taxonomy}" );
++	true === $GLOBALS['mba_test_taxonomies'][ $taxonomy ]['args']['show_in_rest'] || $fail( "{$taxonomy} must support REST" );
++}
++
++$source = file_get_contents( dirname( __DIR__, 2 ) . '/wp-content/plugins/mba-site-core/includes/content-types.php' );
++false === strpos( $source, 'flush_rewrite_rules' ) || $fail( 'Rewrite rules must not flush during normal registration.' );
++
++echo "Content type registration assertions passed.\n";
+diff --git a/wp-content/plugins/mba-site-core/includes/content-types.php b/wp-content/plugins/mba-site-core/includes/content-types.php
+index b6e9b776d8cfa6657d69369a7b4e5bd42a7566a5..1c3d35ef81537c204d8a7a5600a7e33ceb4ff6fc 100644
+--- a/wp-content/plugins/mba-site-core/includes/content-types.php
++++ b/wp-content/plugins/mba-site-core/includes/content-types.php
+@@ -1,6 +1,6 @@
+ <?php
+ /**
+- * Content types and taxonomies.
++ * Durable content types and taxonomies.
+  *
+  * @package MBA_Site_Core
+  */
+@@ -10,37 +10,130 @@ if ( ! defined( 'ABSPATH' ) ) {
+ }
+ 
+ /**
+- * Register a public content type with editor-friendly defaults.
++ * Build complete owner-facing labels for a post type.
++ *
++ * @param string $singular Singular translated label.
++ * @param string $plural   Plural translated label.
++ * @return array<string, string>
+  */
+-function mba_core_register_post_type( string $slug, string $singular, string $plural, string $archive ): void {
+-	register_post_type(
+-		$slug,
+-		array(
+-			'labels'       => array(
+-				'name'          => $plural,
+-				'singular_name' => $singular,
+-				'add_new_item'  => sprintf( __( 'Add New %s', 'mba-site-core' ), $singular ),
+-				'edit_item'     => sprintf( __( 'Edit %s', 'mba-site-core' ), $singular ),
+-			),
+-			'public'       => true,
+-			'show_in_rest' => true,
+-			'has_archive'  => $archive,
+-			'rewrite'      => array( 'slug' => $archive ),
+-			'menu_icon'    => 'dashicons-format-gallery',
+-			'supports'     => array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ),
+-		)
++function mba_core_post_type_labels( string $singular, string $plural ): array {
++	return array(
++		'name'                  => $plural,
++		'singular_name'         => $singular,
++		'menu_name'             => $plural,
++		'name_admin_bar'        => $singular,
++		'add_new'               => __( 'Add New', 'mba-site-core' ),
++		'add_new_item'          => sprintf( __( 'Add New %s', 'mba-site-core' ), $singular ),
++		'new_item'              => sprintf( __( 'New %s', 'mba-site-core' ), $singular ),
++		'edit_item'             => sprintf( __( 'Edit %s', 'mba-site-core' ), $singular ),
++		'view_item'             => sprintf( __( 'View %s', 'mba-site-core' ), $singular ),
++		'all_items'             => sprintf( __( 'All %s', 'mba-site-core' ), $plural ),
++		'search_items'          => sprintf( __( 'Search %s', 'mba-site-core' ), $plural ),
++		'not_found'             => sprintf( __( 'No %s found.', 'mba-site-core' ), strtolower( $plural ) ),
++		'not_found_in_trash'    => sprintf( __( 'No %s found in Trash.', 'mba-site-core' ), strtolower( $plural ) ),
++		'featured_image'        => __( 'Cover image', 'mba-site-core' ),
++		'set_featured_image'    => __( 'Set cover image', 'mba-site-core' ),
++		'remove_featured_image' => __( 'Remove cover image', 'mba-site-core' ),
++		'use_featured_image'    => __( 'Use as cover image', 'mba-site-core' ),
+ 	);
+ }
+ 
+ /**
+- * Register project and catalogue data independently from the theme.
++ * Register all durable business content independently from the active theme.
+  */
+ function mba_core_register_content_types(): void {
+-	mba_core_register_post_type( 'mba_product', __( 'Product', 'mba-site-core' ), __( 'Products', 'mba-site-core' ), 'produits' );
+-	mba_core_register_post_type( 'mba_project', __( 'Project', 'mba-site-core' ), __( 'Projects', 'mba-site-core' ), 'realisations' );
+-	mba_core_register_post_type( 'mba_faq', __( 'FAQ', 'mba-site-core' ), __( 'FAQs', 'mba-site-core' ), 'faq-items' );
+-	mba_core_register_post_type( 'mba_testimonial', __( 'Testimonial', 'mba-site-core' ), __( 'Testimonials', 'mba-site-core' ), 'temoignages' );
+-	mba_core_register_post_type( 'mba_partner', __( 'Partner', 'mba-site-core' ), __( 'Partners', 'mba-site-core' ), 'partenaires' );
++	$common = array(
++		'show_ui'           => true,
++		'show_in_rest'      => true,
++		'map_meta_cap'      => true,
++		'capability_type'   => 'post',
++		'delete_with_user'  => false,
++		'supports'          => array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ),
++	);
++
++	register_post_type(
++		'mba_product',
++		array_merge(
++			$common,
++			array(
++				'labels'             => mba_core_post_type_labels( __( 'Product', 'mba-site-core' ), __( 'Products', 'mba-site-core' ) ),
++				'public'             => true,
++				'publicly_queryable' => true,
++				'exclude_from_search' => false,
++				'has_archive'        => 'produits',
++				'rewrite'            => array( 'slug' => 'produits', 'with_front' => false ),
++				'menu_icon'          => 'dashicons-screenoptions',
++				'menu_position'      => 20,
++			)
++		)
++	);
++
++	register_post_type(
++		'mba_project',
++		array_merge(
++			$common,
++			array(
++				'labels'             => mba_core_post_type_labels( __( 'Project', 'mba-site-core' ), __( 'Projects', 'mba-site-core' ) ),
++				'public'             => true,
++				'publicly_queryable' => true,
++				'exclude_from_search' => false,
++				'has_archive'        => 'realisations',
++				'rewrite'            => array( 'slug' => 'realisations', 'with_front' => false ),
++				'menu_icon'          => 'dashicons-format-gallery',
++				'menu_position'      => 21,
++			)
++		)
++	);
++
++	$editor_only = array(
++		'public'              => false,
++		'publicly_queryable'  => false,
++		'exclude_from_search' => true,
++		'has_archive'         => false,
++		'rewrite'             => false,
++		'show_ui'             => true,
++		'show_in_rest'        => true,
++		'map_meta_cap'        => true,
++		'capability_type'     => 'post',
++		'delete_with_user'    => false,
++		'supports'            => array( 'title', 'editor', 'revisions', 'custom-fields' ),
++	);
++
++	register_post_type(
++		'mba_faq',
++		array_merge(
++			$editor_only,
++			array(
++				'labels'        => mba_core_post_type_labels( __( 'FAQ', 'mba-site-core' ), __( 'FAQs', 'mba-site-core' ) ),
++				'menu_icon'     => 'dashicons-editor-help',
++				'menu_position' => 22,
++			)
++		)
++	);
++
++	register_post_type(
++		'mba_testimonial',
++		array_merge(
++			$editor_only,
++			array(
++				'labels'        => mba_core_post_type_labels( __( 'Testimonial', 'mba-site-core' ), __( 'Testimonials', 'mba-site-core' ) ),
++				'menu_icon'     => 'dashicons-testimonial',
++				'menu_position' => 23,
++			)
++		)
++	);
++
++	register_post_type(
++		'mba_partner',
++		array_merge(
++			$editor_only,
++			array(
++				'labels'        => mba_core_post_type_labels( __( 'Partner', 'mba-site-core' ), __( 'Partners', 'mba-site-core' ) ),
++				'menu_icon'     => 'dashicons-groups',
++				'menu_position' => 24,
++			)
++		)
++	);
+ 
+ 	register_taxonomy(
+ 		'mba_product_category',
+@@ -54,7 +147,23 @@ function mba_core_register_content_types(): void {
+ 			'show_in_rest'      => true,
+ 			'hierarchical'      => true,
+ 			'show_admin_column' => true,
+-			'rewrite'           => array( 'slug' => 'categorie-produit' ),
++			'rewrite'           => array( 'slug' => 'categorie-produit', 'with_front' => false ),
++		)
++	);
++
++	register_taxonomy(
++		'mba_application_type',
++		'mba_product',
++		array(
++			'labels'            => array(
++				'name'          => __( 'Application Types', 'mba-site-core' ),
++				'singular_name' => __( 'Application Type', 'mba-site-core' ),
++			),
++			'public'            => true,
++			'show_in_rest'      => true,
++			'hierarchical'      => true,
++			'show_admin_column' => true,
++			'rewrite'           => array( 'slug' => 'application', 'with_front' => false ),
+ 		)
+ 	);
+ 
+@@ -70,7 +179,23 @@ function mba_core_register_content_types(): void {
+ 			'show_in_rest'      => true,
+ 			'hierarchical'      => true,
+ 			'show_admin_column' => true,
+-			'rewrite'           => array( 'slug' => 'type-projet' ),
++			'rewrite'           => array( 'slug' => 'type-projet', 'with_front' => false ),
++		)
++	);
++
++	register_taxonomy(
++		'mba_project_location',
++		'mba_project',
++		array(
++			'labels'            => array(
++				'name'          => __( 'Project Locations', 'mba-site-core' ),
++				'singular_name' => __( 'Project Location', 'mba-site-core' ),
++			),
++			'public'            => true,
++			'show_in_rest'      => true,
++			'hierarchical'      => true,
++			'show_admin_column' => true,
++			'rewrite'           => array( 'slug' => 'lieu-projet', 'with_front' => false ),
+ 		)
+ 	);
+ 
+@@ -83,12 +208,13 @@ function mba_core_register_content_types(): void {
+ 				'singular_name' => __( 'FAQ Category', 'mba-site-core' ),
+ 			),
+ 			'public'            => false,
++			'publicly_queryable' => false,
+ 			'show_ui'           => true,
+ 			'show_in_rest'      => true,
+ 			'hierarchical'      => true,
+ 			'show_admin_column' => true,
++			'rewrite'           => false,
+ 		)
+ 	);
+ }
+ add_action( 'init', 'mba_core_register_content_types' );
+-
+diff --git a/wp-content/plugins/mba-site-core/mba-site-core.php b/wp-content/plugins/mba-site-core/mba-site-core.php
+index 8f20bdc830116b60194b171ac9d8dcb52a07fc9e..afb40783d272db840d040a448644ab1f0b8e39ba 100644
+--- a/wp-content/plugins/mba-site-core/mba-site-core.php
++++ b/wp-content/plugins/mba-site-core/mba-site-core.php
+@@ -2,31 +2,41 @@
+ /**
+  * Plugin Name: MBA Site Core
+  * Description: Durable content types and business settings for MBA Menuiseries Belhaj Ali.
+- * Version: 0.1.0
++ * Version: 0.2.0
+  * Author: MBA Menuiseries
+  * Text Domain: mba-site-core
++ * Domain Path: /languages
+  * Requires at least: 6.6
+  * Requires PHP: 8.1
++ *
++ * @package MBA_Site_Core
+  */
+ 
+ if ( ! defined( 'ABSPATH' ) ) {
+ 	exit;
+ }
+ 
+-define( 'MBA_CORE_VERSION', '0.1.0' );
++define( 'MBA_CORE_VERSION', '0.2.0' );
+ define( 'MBA_CORE_PATH', plugin_dir_path( __FILE__ ) );
+ 
+ require_once MBA_CORE_PATH . 'includes/content-types.php';
+ require_once MBA_CORE_PATH . 'includes/meta-fields.php';
+ require_once MBA_CORE_PATH . 'includes/settings.php';
+ 
+-register_activation_hook(
+-	__FILE__,
+-	static function (): void {
+-		mba_core_register_content_types();
+-		flush_rewrite_rules();
+-	}
+-);
++/**
++ * Register rewrite structures once before activation flushes them.
++ */
++function mba_core_activate(): void {
++	mba_core_register_content_types();
++	flush_rewrite_rules();
++}
+ 
+-register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
++/**
++ * Remove only rewrite rules on deactivation; stored content is never deleted.
++ */
++function mba_core_deactivate(): void {
++	flush_rewrite_rules();
++}
+ 
++register_activation_hook( __FILE__, 'mba_core_activate' );
++register_deactivation_hook( __FILE__, 'mba_core_deactivate' );

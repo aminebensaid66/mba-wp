@@ -121,21 +121,59 @@ function mba_homepage_list_section( string $id, string $title, array $items, boo
 
 function mba_theme_render_homepage(): string {
 	$heading = (string) mba_homepage_setting( 'mba_homepage_hero_heading' );
-	$heading = $heading ? $heading : __( 'Votre projet aluminium', 'mba-menuiseries' );
+	$heading = $heading ? $heading : __( 'L’aluminium au service de vos espaces', 'mba-menuiseries' );
+	if ( 'Votre projet aluminium' === trim( $heading ) ) {
+		$heading = __( 'L’aluminium au service de vos espaces', 'mba-menuiseries' );
+	}
 	$proposition = (string) mba_homepage_setting( 'mba_homepage_value_proposition' );
-	$proposition = $proposition ? $proposition : (string) mba_homepage_setting( 'mba_description' );
+	$proposition = $proposition ? $proposition : __( 'Fenêtres, portes, baies et solutions extérieures : découvrez les gammes MBA et imaginez celles qui correspondent à votre projet.', 'mba-menuiseries' );
 	$company = (string) mba_homepage_setting( 'mba_legal_name' );
 	$quote_label = (string) mba_homepage_setting( 'mba_quote_cta_label' );
 	$quote_label = $quote_label ? $quote_label : __( 'Demander un devis', 'mba-menuiseries' );
 	$html = '<main id="main" tabindex="-1" class="mba-homepage">';
-	$html .= '<section class="mba-home-hero mba-section" aria-labelledby="mba-home-heading">';
-	$hero = mba_homepage_image( 'mba_homepage_hero_image_id', $heading, 'mba-home-hero-image' );
-	$html .= $hero ? '<div class="mba-home-hero__media">' . $hero . '</div>' : '';
-	$html .= '<div class="mba-home-hero__content"><p class="mba-eyebrow">' . esc_html( $company ) . '</p><h1 id="mba-home-heading">' . esc_html( $heading ) . '</h1>' . ( $proposition ? '<p class="mba-lede">' . nl2br( esc_html( $proposition ) ) . '</p>' : '' ) . '<div class="mba-button-row"><a class="wp-element-button" href="' . esc_url( home_url( '/devis/' ) ) . '">' . esc_html( $quote_label ) . '</a><a class="wp-element-button is-style-outline" href="' . esc_url( home_url( '/realisations/' ) ) . '">' . esc_html__( 'Voir nos réalisations', 'mba-menuiseries' ) . '</a></div></div></section>';
-	$html .= mba_homepage_list_section( 'mba-trust-heading', __( 'Repères MBA', 'mba-menuiseries' ), mba_homepage_lines( (string) mba_homepage_setting( 'mba_homepage_trust_highlights' ) ) );
 	$products = mba_homepage_content_query( 'mba_product' );
+	$hero = mba_homepage_image( 'mba_homepage_hero_image_id', $heading, 'mba-home-hero-image' );
+	$hero_product = $products->posts[0] ?? null;
+	if ( ! $hero ) {
+		$hero_products = new WP_Query(
+			array(
+				'post_type' => 'mba_product',
+				'post_status' => 'publish',
+				'posts_per_page' => 1,
+				'no_found_rows' => true,
+				'orderby' => 'meta_value_num',
+				'order' => 'DESC',
+				'meta_key' => 'mba_display_order',
+			)
+		);
+		$hero_product = $hero_products->posts[0] ?? $hero_product;
+	}
+	if ( ! $hero && $hero_product instanceof WP_Post ) {
+		$hero_image_id = get_post_thumbnail_id( $hero_product->ID );
+		if ( ! $hero_image_id && isset( $products->posts[0] ) && $products->posts[0] instanceof WP_Post ) {
+			$hero_image_id = get_post_thumbnail_id( $products->posts[0]->ID );
+		}
+		if ( $hero_image_id ) {
+			$hero = (string) wp_get_attachment_image(
+				$hero_image_id,
+				'mba-hero',
+				false,
+				array(
+					'class' => 'mba-home-hero-image',
+					'alt' => $heading,
+					'loading' => 'eager',
+					'decoding' => 'async',
+					'sizes' => '(max-width: 767px) 100vw, 52vw',
+					'fetchpriority' => 'high',
+				)
+			);
+		}
+	}
+	$html .= '<section class="mba-home-hero mba-section" aria-labelledby="mba-home-heading"><div class="mba-home-hero__content"><p class="mba-eyebrow">' . esc_html__( 'Menuiseries aluminium', 'mba-menuiseries' ) . '</p><h1 id="mba-home-heading">' . esc_html( $heading ) . '</h1><p class="mba-lede">' . nl2br( esc_html( $proposition ) ) . '</p><div class="mba-button-row"><a class="wp-element-button" href="' . esc_url( home_url( '/produits/' ) ) . '">' . esc_html__( 'Explorer les produits', 'mba-menuiseries' ) . '<span aria-hidden="true"> ↗</span></a><a class="mba-home-text-link" href="' . esc_url( home_url( '/devis/' ) ) . '">' . esc_html( $quote_label ) . '<span aria-hidden="true"> →</span></a></div><p class="mba-home-hero__note">' . esc_html__( 'Des ouvertures aux aménagements extérieurs', 'mba-menuiseries' ) . '</p></div><div class="mba-home-hero__visual">' . ( $hero ? '<div class="mba-home-hero__media">' . $hero . '</div>' : '<div class="mba-home-hero__fallback" aria-hidden="true"><span>mba</span></div>' ) . '<a class="mba-home-hero__caption" href="' . esc_url( home_url( '/produits/' ) ) . '"><span>' . esc_html__( 'Découvrez nos solutions', 'mba-menuiseries' ) . '</span><span aria-hidden="true">↗</span></a></div></section>';
+	$html .= '<div class="mba-home-marquee" aria-hidden="true"><div class="mba-home-marquee__track"><span>Fenêtres &amp; portes</span><i>✳</i><span>Baies coulissantes</span><i>✳</i><span>Portes d’entrée</span><i>✳</i><span>Volets roulants</span><i>✳</i><span>Moustiquaires</span><i>✳</i><span>Garde-corps</span><i>✳</i><span>Vérandas &amp; pergolas</span><i>✳</i><span>Façades</span><i>✳</i><span>Verrières</span><i>✳</i><span>Fenêtres &amp; portes</span><i>✳</i><span>Baies coulissantes</span><i>✳</i><span>Portes d’entrée</span><i>✳</i><span>Volets roulants</span><i>✳</i><span>Moustiquaires</span><i>✳</i><span>Garde-corps</span><i>✳</i><span>Vérandas &amp; pergolas</span><i>✳</i><span>Façades</span><i>✳</i><span>Verrières</span><i>✳</i></div></div>';
+	$html .= mba_homepage_list_section( 'mba-trust-heading', __( 'Repères MBA', 'mba-menuiseries' ), mba_homepage_lines( (string) mba_homepage_setting( 'mba_homepage_trust_highlights' ) ) );
 	if ( $products->have_posts() ) {
-		$html .= '<section class="mba-section" aria-labelledby="mba-products-heading"><h2 id="mba-products-heading">' . esc_html__( 'Produits sélectionnés', 'mba-menuiseries' ) . '</h2>' . mba_homepage_cards( $products, 'mba-grid' ) . '</section>';
+		$html .= '<section class="mba-section mba-home-products" aria-labelledby="mba-products-heading"><div class="mba-section-heading"><div><p class="mba-eyebrow">' . esc_html__( 'Nos produits', 'mba-menuiseries' ) . '</p><h2 id="mba-products-heading">' . esc_html__( 'Des solutions pour chaque espace', 'mba-menuiseries' ) . '</h2></div><a class="mba-home-text-link" href="' . esc_url( home_url( '/produits/' ) ) . '">' . esc_html__( 'Voir tout le catalogue', 'mba-menuiseries' ) . '<span aria-hidden="true"> →</span></a></div>' . mba_homepage_cards( $products, 'mba-grid' ) . '</section>';
 	}
 	$description = (string) mba_homepage_setting( 'mba_description' );
 	$intro_image = mba_homepage_image( 'mba_homepage_intro_image_id', $company, 'mba-home-section-image' );
@@ -164,12 +202,14 @@ function mba_theme_render_homepage(): string {
 			$html .= '<section class="mba-section" aria-labelledby="mba-' . esc_attr( $type ) . '-heading"><h2 id="mba-' . esc_attr( $type ) . '-heading">' . esc_html( $title ) . '</h2>' . mba_homepage_cards( $query, 'mba-grid' ) . '</section>';
 		}
 	}
+	$hello_world = get_page_by_path( 'hello-world', 'OBJECT', 'post' );
 	$posts = new WP_Query(
 		array(
 			'post_type' => 'post',
 			'post_status' => 'publish',
 			'posts_per_page' => 3,
 			'no_found_rows' => true,
+			'post__not_in' => $hello_world instanceof WP_Post ? array( $hello_world->ID ) : array(),
 		)
 	);
 	if ( $posts->have_posts() ) {

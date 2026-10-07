@@ -87,6 +87,10 @@ function mba_theme_render_product_detail(): string {
 			'sizes' => '(max-width: 767px) 100vw, 50vw',
 		)
 	) . '</div>' : '' ) . '<div><p class="mba-eyebrow">' . esc_html__( 'Produit', 'mba-menuiseries' ) . '</p><h1 id="mba-product-title">' . esc_html( $title ) . '</h1>' . ( mba_product_detail_meta( $id, 'mba_short_description' ) ? '<p class="mba-lede">' . nl2br( esc_html( mba_product_detail_meta( $id, 'mba_short_description' ) ) ) . '</p>' : '' ) . '</div></section>';
+	$description = trim( wp_kses_post( apply_filters( 'the_content', $product->post_content ) ) );
+	if ( $description ) {
+		$html .= '<section class="mba-section mba-product-description" aria-labelledby="mba-product-description-heading"><h2 id="mba-product-description-heading">' . esc_html__( 'Présentation', 'mba-menuiseries' ) . '</h2>' . $description . '</section>';
+	}
 	$html .= mba_product_detail_section( 'mba-benefits-heading', __( 'Bénéfices', 'mba-menuiseries' ), mba_product_detail_list( mba_product_detail_meta( $id, 'mba_benefits', array() ) ) );
 	$html .= mba_product_detail_section( 'mba-configurations-heading', __( 'Configurations et options', 'mba-menuiseries' ), mba_product_detail_list( array_merge( (array) mba_product_detail_meta( $id, 'mba_configurations', array() ), (array) mba_product_detail_meta( $id, 'mba_glazing_options', array() ), (array) mba_product_detail_meta( $id, 'mba_applications', array() ) ) ) );
 	foreach ( array(
@@ -99,25 +103,29 @@ function mba_theme_render_product_detail(): string {
 	$finishes = mba_product_detail_meta( $id, 'mba_colors_finishes', array() );
 	$finish_html = '';
 	if ( is_array( $finishes ) ) {
-		$finish_html = '<ul class="mba-detail-list">';
+		$finish_items = array();
 		foreach ( $finishes as $finish ) {
 			if ( ! empty( $finish['label'] ) ) {
-				$finish_html .= '<li>' . esc_html( $finish['label'] ) . '</li>';
+				$finish_items[] = '<li>' . esc_html( $finish['label'] ) . '</li>';
 			}
 		}
-		$finish_html .= '</ul>';
+		if ( $finish_items ) {
+			$finish_html = '<ul class="mba-detail-list">' . implode( '', $finish_items ) . '</ul>';
+		}
 	}
 	$html .= mba_product_detail_section( 'mba-finishes-heading', __( 'Couleurs et finitions', 'mba-menuiseries' ), $finish_html );
 	$performance = mba_product_detail_meta( $id, 'mba_performance_details', array() );
 	$performance_html = '';
 	if ( is_array( $performance ) ) {
-		$performance_html = '<dl class="mba-detail-specs">';
+		$performance_items = array();
 		foreach ( $performance as $row ) {
 			if ( ! empty( $row['label'] ) && ! empty( $row['value'] ) ) {
-				$performance_html .= '<dt>' . esc_html( $row['label'] ) . '</dt><dd>' . esc_html( $row['value'] ) . '</dd>';
+				$performance_items[] = '<dt>' . esc_html( $row['label'] ) . '</dt><dd>' . esc_html( $row['value'] ) . '</dd>';
 			}
 		}
-		$performance_html .= '</dl>';
+		if ( $performance_items ) {
+			$performance_html = '<dl class="mba-detail-specs">' . implode( '', $performance_items ) . '</dl>';
+		}
 	}
 	$html .= mba_product_detail_section( 'mba-performance-heading', __( 'Performances vérifiées', 'mba-menuiseries' ), $performance_html );
 	$gallery = mba_product_detail_meta( $id, 'mba_gallery', array() );

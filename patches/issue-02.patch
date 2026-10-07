@@ -1,0 +1,426 @@
+diff --git a/.github/workflows/quality.yml b/.github/workflows/quality.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..485164018f95f4b37c49db5767d4c4b93e6e9c4d
+--- /dev/null
++++ b/.github/workflows/quality.yml
+@@ -0,0 +1,51 @@
++name: Quality
++
++on:
++  pull_request:
++  push:
++    branches: [main]
++
++permissions:
++  contents: read
++
++jobs:
++  php:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: shivammathur/setup-php@v2
++        with:
++          php-version: '8.3'
++          coverage: none
++          tools: composer:v2
++      - name: Cache Composer downloads
++        uses: actions/cache@v4
++        with:
++          path: ~/.cache/composer/files
++          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
++          restore-keys: composer-${{ runner.os }}-
++      - run: composer install --no-interaction --prefer-dist
++      - run: composer check
++
++  frontend-and-config:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++      - name: Cache npm downloads
++        uses: actions/cache@v4
++        with:
++          path: ~/.npm
++          key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
++          restore-keys: npm-${{ runner.os }}-
++      - run: npm install --ignore-scripts
++      - run: npm run check
++
++  compose:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - run: cp .env.example .env
++      - run: docker compose config --quiet
+diff --git a/.gitignore b/.gitignore
+index 6a5dd46aa8be159178fbc134e3e26439f6aef7db..5ed12653b84b1bb8d28e7a1001cb90c914fe20af 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -9,3 +9,6 @@ wordpress/
+ wp-content/uploads/
+ backups/
+ 
++.phpunit.result.cache
++.phpstan.cache
++coverage/
+diff --git a/.stylelintrc.json b/.stylelintrc.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..e31d02e2748c4ac69b6a43055ccfd3fb38d9d0e7
+--- /dev/null
++++ b/.stylelintrc.json
+@@ -0,0 +1,9 @@
++{
++  "extends": ["stylelint-config-standard"],
++  "ignoreFiles": [
++    "vendor/**",
++    "node_modules/**",
++    "wordpress/**",
++    "wp-content/uploads/**"
++  ]
++}
+diff --git a/bin/lint-php.php b/bin/lint-php.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d4a0893d46fb37a306e011af1882cb45bd16abb
+--- /dev/null
++++ b/bin/lint-php.php
+@@ -0,0 +1,34 @@
++<?php
++/**
++ * Dependency-free PHP syntax check for custom source.
++ */
++
++$roots = array(
++	__DIR__ . '/../wp-content/plugins/mba-site-core',
++	__DIR__ . '/../wp-content/themes/mba-menuiseries',
++);
++$failed = false;
++$count  = 0;
++
++foreach ( $roots as $root ) {
++	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root ) );
++	foreach ( $iterator as $file ) {
++		if ( ! $file->isFile() || 'php' !== $file->getExtension() ) {
++			continue;
++		}
++		++$count;
++		$command = escapeshellarg( PHP_BINARY ) . ' -l ' . escapeshellarg( $file->getPathname() ) . ' 2>&1';
++		exec( $command, $output, $status );
++		if ( 0 !== $status ) {
++			$failed = true;
++			fwrite( STDERR, implode( PHP_EOL, $output ) . PHP_EOL );
++		}
++		$output = array();
++	}
++}
++
++if ( $failed ) {
++	exit( 1 );
++}
++
++echo "PHP syntax OK ({$count} files)." . PHP_EOL;
+diff --git a/composer.json b/composer.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..536c141333e179414850fb1ab5a4f8071fe7e80f
+--- /dev/null
++++ b/composer.json
+@@ -0,0 +1,30 @@
++{
++  "name": "mba-menuiseries/mba-wp",
++  "description": "Development quality tooling for the MBA Menuiseries WordPress site.",
++  "type": "project",
++  "require-dev": {
++    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
++    "php-stubs/wordpress-stubs": "^6.8",
++    "phpstan/phpstan": "^2.1",
++    "squizlabs/php_codesniffer": "^3.13",
++    "wp-coding-standards/wpcs": "^3.4.1"
++  },
++  "config": {
++    "allow-plugins": {
++      "dealerdirect/phpcodesniffer-composer-installer": true
++    },
++    "sort-packages": true
++  },
++  "scripts": {
++    "lint:php": "@php ./bin/lint-php.php",
++    "phpcs": "phpcs -n",
++    "phpstan": "phpstan analyse --no-progress",
++    "test:lint-failure": "sh ./tests/ci/assert-invalid-php-fails.sh",
++    "check": [
++      "@lint:php",
++      "@phpcs",
++      "@phpstan",
++      "@test:lint-failure"
++    ]
++  }
++}
+diff --git a/docs/testing.md b/docs/testing.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..de58ed5fc93abde85017085739b80bffbf82605d
+--- /dev/null
++++ b/docs/testing.md
+@@ -0,0 +1,40 @@
++# Testing and quality gates
++
++Issue #2 adds the same quality checks locally and in GitHub Actions.
++
++## Local commands
++
++PHP tooling requires Composer 2 and PHP 8.1+ (CI uses PHP 8.3):
++
++```bash
++composer install
++composer check
++```
++
++`composer check` runs dependency-free PHP syntax validation, WordPress Coding Standards (PHPCS), PHPStan static analysis, and a guard proving deliberately invalid PHP is rejected by the syntax gate.
++
++Front-end/configuration tooling requires Node.js 22+:
++
++```bash
++npm install --ignore-scripts
++npm run check
++```
++
++This runs ESLint, Stylelint, and parses every repository JSON/YAML file outside generated/dependency/upload directories.
++
++Compose validation:
++
++```bash
++cp .env.example .env
++docker compose config --quiet
++```
++
++Runtime verification remains `./bin/smoke-wordpress.sh` from issue #1.
++
++## What is intentionally excluded
++
++Quality tools exclude generated/dependency/state directories: `vendor/`, `node_modules/`, `wordpress/`, `wp-content/uploads/`, local `.env`, logs, IDE metadata, and backups. Custom plugin/theme source is always included.
++
++## GitHub Actions and branch protection
++
++`.github/workflows/quality.yml` runs on every pull request and every push to `main`. The repository administrator should configure branch protection/rulesets for `main` to require the `php`, `frontend-and-config`, and `compose` jobs before merging, require pull-request review, and block force pushes/deletion. This repository patch documents the intended rules but does not mutate GitHub settings.
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d08179bf15c207947833eced2e557c005a3ebec7
+--- /dev/null
++++ b/eslint.config.mjs
+@@ -0,0 +1,18 @@
++import js from '@eslint/js';
++
++export default [
++  {
++    ignores: ['vendor/**', 'node_modules/**', 'wordpress/**', 'wp-content/uploads/**']
++  },
++  js.configs.recommended,
++  {
++    files: ['**/*.mjs', '**/*.js'],
++    languageOptions: {
++      ecmaVersion: 'latest',
++      sourceType: 'module',
++      globals: {
++        console: 'readonly'
++      }
++    }
++  }
++];
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b5db9357c49301178041ebd9349051873804b97
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,17 @@
++{
++  "name": "mba-wp-quality",
++  "private": true,
++  "scripts": {
++    "lint:js": "eslint .",
++    "lint:css": "stylelint \"wp-content/**/*.css\"",
++    "validate:config": "node tests/config/validate-config.mjs",
++    "check": "npm run lint:js && npm run lint:css && npm run validate:config"
++  },
++  "devDependencies": {
++    "@eslint/js": "^10.0.0",
++    "eslint": "^10.0.0",
++    "stylelint": "^17.0.0",
++    "stylelint-config-standard": "^40.0.0",
++    "yaml": "^2.8.0"
++  }
++}
+diff --git a/phpcs.xml.dist b/phpcs.xml.dist
+new file mode 100644
+index 0000000000000000000000000000000000000000..899cb7c601d61f496a9f09b5043fa1876e00f1ff
+--- /dev/null
++++ b/phpcs.xml.dist
+@@ -0,0 +1,12 @@
++<?xml version="1.0"?>
++<ruleset name="MBA WordPress">
++  <description>WordPress coding standards for custom MBA code.</description>
++  <file>wp-content/plugins/mba-site-core</file>
++  <file>wp-content/themes/mba-menuiseries</file>
++  <exclude-pattern>*/vendor/*</exclude-pattern>
++  <exclude-pattern>*/node_modules/*</exclude-pattern>
++  <rule ref="WordPress-Core" />
++  <config name="minimum_supported_wp_version" value="6.6" />
++  <arg name="extensions" value="php" />
++  <arg value="ps" />
++</ruleset>
+diff --git a/phpstan.neon.dist b/phpstan.neon.dist
+new file mode 100644
+index 0000000000000000000000000000000000000000..6bd6bfcd9ee6a50aae0df8d7b361832f3a51cab0
+--- /dev/null
++++ b/phpstan.neon.dist
+@@ -0,0 +1,12 @@
++parameters:
++    level: 5
++    paths:
++        - wp-content/plugins/mba-site-core
++        - wp-content/themes/mba-menuiseries/functions.php
++    scanFiles:
++        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
++    excludePaths:
++        analyse:
++            - vendor
++            - node_modules
++    treatPhpDocTypesAsCertain: false
+diff --git a/tests/ci/assert-invalid-php-fails.sh b/tests/ci/assert-invalid-php-fails.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..107ffb4c45d9c56318e910779a4fbcc740b5433e
+--- /dev/null
++++ b/tests/ci/assert-invalid-php-fails.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env sh
++set -eu
++
++tmp="$(mktemp)"
++trap 'rm -f "$tmp"' EXIT
++printf '%s\n' '<?php function broken( {' > "$tmp"
++
++if php -l "$tmp" >/dev/null 2>&1; then
++  echo "Expected php -l to reject deliberately invalid PHP." >&2
++  exit 1
++fi
++
++echo "Invalid PHP correctly fails the syntax gate."
+diff --git a/tests/config/validate-config.mjs b/tests/config/validate-config.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..28b078e60425c9238114431d160fe0dba8737420
+--- /dev/null
++++ b/tests/config/validate-config.mjs
+@@ -0,0 +1,38 @@
++import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { join, extname } from 'node:path';
++import YAML from 'yaml';
++
++const ignored = new Set(['.git', 'vendor', 'node_modules', 'wordpress', 'wp-content/uploads']);
++const roots = ['.'];
++const files = [];
++
++function walk(dir) {
++  for (const name of readdirSync(dir)) {
++    const path = join(dir, name);
++    const normalized = path.replace(/^\.\//, '');
++    if ([...ignored].some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) {
++      continue;
++    }
++    const stat = statSync(path);
++    if (stat.isDirectory()) {
++      walk(path);
++    } else if (['.json', '.yml', '.yaml'].includes(extname(name))) {
++      files.push(path);
++    }
++  }
++}
++
++for (const root of roots) {
++  walk(root);
++}
++
++for (const file of files) {
++  const source = readFileSync(file, 'utf8');
++  if (file.endsWith('.json')) {
++    JSON.parse(source);
++  } else {
++    YAML.parse(source);
++  }
++}
++
++console.log(`Validated ${files.length} JSON/YAML files.`);
+diff --git a/wp-content/themes/mba-menuiseries/assets/css/site.css b/wp-content/themes/mba-menuiseries/assets/css/site.css
+index 46d8dc1a94f7fd21f3be439dc58a54a6ef9ac144..02e61d0b54347e63525f72aa843d9412ac5c1f88 100644
+--- a/wp-content/themes/mba-menuiseries/assets/css/site.css
++++ b/wp-content/themes/mba-menuiseries/assets/css/site.css
+@@ -3,9 +3,18 @@
+ 	--mba-shadow: 0 18px 45px rgb(20 32 31 / 10%);
+ }
+ 
+-html { scroll-behavior: smooth; }
+-body { margin: 0; }
+-img { height: auto; }
++html {
++	scroll-behavior: smooth;
++}
++
++body {
++	margin: 0;
++}
++
++img {
++	height: auto;
++}
++
+ a:focus-visible,
+ button:focus-visible,
+ input:focus-visible,
+@@ -14,18 +23,41 @@ select:focus-visible {
+ 	outline: 3px solid #b67435;
+ 	outline-offset: 3px;
+ }
+-.wp-site-blocks { min-height: 100vh; }
+-.mba-site-header { border-bottom: 1px solid var(--mba-border); }
++
++.wp-site-blocks {
++	min-height: 100vh;
++}
++
++.mba-site-header {
++	border-bottom: 1px solid var(--mba-border);
++}
++
+ .mba-card {
+ 	border: 1px solid var(--mba-border);
+ 	box-shadow: var(--mba-shadow);
+ 	overflow: hidden;
+ }
+-.mba-card img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+-.mba-eyebrow { letter-spacing: 0.12em; text-transform: uppercase; }
+ 
+-@media (prefers-reduced-motion: reduce) {
+-	html { scroll-behavior: auto; }
+-	*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
++.mba-card img {
++	width: 100%;
++	aspect-ratio: 4 / 3;
++	object-fit: cover;
++}
++
++.mba-eyebrow {
++	letter-spacing: 0.12em;
++	text-transform: uppercase;
+ }
+ 
++@media (prefers-reduced-motion: reduce) {
++	html {
++		scroll-behavior: auto;
++	}
++
++	*,
++	*::before,
++	*::after {
++		scroll-behavior: auto !important;
++		transition-duration: 0.01ms !important;
++	}
++}

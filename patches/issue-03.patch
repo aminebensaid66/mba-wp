@@ -1,0 +1,445 @@
+diff --git a/composer.json b/composer.json
+index 536c141333e179414850fb1ab5a4f8071fe7e80f..ffbc7474869e3e7b5915fee255504715ac6345f8 100644
+--- a/composer.json
++++ b/composer.json
+@@ -24,7 +24,9 @@
+       "@lint:php",
+       "@phpcs",
+       "@phpstan",
++      "@test:theme",
+       "@test:lint-failure"
+-    ]
++    ],
++    "test:theme": "@php tests/theme/theme-foundation.php"
+   }
+ }
+diff --git a/docs/testing.md b/docs/testing.md
+index de58ed5fc93abde85017085739b80bffbf82605d..19c95abf2ca76ffb57178c77cfc77d3aca1b79be 100644
+--- a/docs/testing.md
++++ b/docs/testing.md
+@@ -38,3 +38,9 @@ Quality tools exclude generated/dependency/state directories: `vendor/`, `node_m
+ ## GitHub Actions and branch protection
+ 
+ `.github/workflows/quality.yml` runs on every pull request and every push to `main`. The repository administrator should configure branch protection/rulesets for `main` to require the `php`, `frontend-and-config`, and `compose` jobs before merging, require pull-request review, and block force pushes/deletion. This repository patch documents the intended rules but does not mutate GitHub settings.
++
++## Theme foundation verification (issue #3)
++
++`composer check` also runs `tests/theme/theme-foundation.php`, which guards centralized theme tokens, all required responsive breakpoints, minimum touch-target treatment, reduced-motion handling, flexible image cropping, and the absence of a fixed viewport minimum that would block zoom/reflow.
++
++Manual acceptance still requires rendering representative content at 360, 390/430, 768, 1024, and 1440 px and at 200% browser zoom. Check keyboard focus, portrait/landscape uploads, text reflow, and reduced-motion behavior in a real WordPress/browser environment; do not treat the static assertions as a substitute for that review.
+diff --git a/tests/theme/theme-foundation.php b/tests/theme/theme-foundation.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..46c294e6de1d614cfaa67e5de45e7e8c5841bef2
+--- /dev/null
++++ b/tests/theme/theme-foundation.php
+@@ -0,0 +1,25 @@
++<?php
++/**
++ * Dependency-free assertions for issue #3 theme foundations.
++ */
++
++$root  = dirname( __DIR__, 2 );
++$json  = json_decode( file_get_contents( $root . '/wp-content/themes/mba-menuiseries/theme.json' ), true, 512, JSON_THROW_ON_ERROR );
++$css   = file_get_contents( $root . '/wp-content/themes/mba-menuiseries/assets/css/site.css' );
++$fail  = static function ( string $message ): void {
++	fwrite( STDERR, $message . PHP_EOL );
++	exit( 1 );
++};
++
++$custom = $json['settings']['custom'] ?? array();
++isset( $custom['focus']['color'], $custom['media']['ratio'], $custom['border']['subtle'] ) || $fail( 'Missing centralized focus/media/border tokens.' );
++
++foreach ( array( '430px', '768px', '1024px', '1440px', 'prefers-reduced-motion', 'object-fit: cover', 'min-height: 44px' ) as $needle ) {
++	false !== strpos( $css, $needle ) || $fail( "Missing CSS foundation: {$needle}" );
++}
++
++if ( false !== strpos( $css, 'min-width: 320px' ) || false !== strpos( $css, 'min-inline-size: 320px' ) ) {
++	$fail( 'Fixed minimum viewport width would break zoom/reflow.' );
++}
++
++echo "Theme foundation assertions passed.\n";
+diff --git a/wp-content/themes/mba-menuiseries/assets/css/site.css b/wp-content/themes/mba-menuiseries/assets/css/site.css
+index 02e61d0b54347e63525f72aa843d9412ac5c1f88..a0d364893c67b1ab91b825b281cc650d3a456b7a 100644
+--- a/wp-content/themes/mba-menuiseries/assets/css/site.css
++++ b/wp-content/themes/mba-menuiseries/assets/css/site.css
+@@ -1,6 +1,9 @@
+ :root {
+-	--mba-border: #d9dfdd;
+-	--mba-shadow: 0 18px 45px rgb(20 32 31 / 10%);
++	--mba-border: var(--wp--custom--border--subtle, #d7dddc);
++	--mba-radius: var(--wp--custom--border--radius, 2px);
++	--mba-shadow: var(--wp--custom--shadow--card, 0 18px 45px rgb(20 32 31 / 10%));
++	--mba-focus: var(--wp--custom--focus--color, #075985);
++	--mba-page-gutter: clamp(1rem, 4vw, 2rem);
+ }
+ 
+ html {
+@@ -9,46 +12,144 @@ html {
+ 
+ body {
+ 	margin: 0;
++	min-inline-size: 0;
++	font-size: 1rem;
+ }
+ 
+-img {
++img,
++video,
++svg {
++	max-width: 100%;
+ 	height: auto;
+ }
+ 
++p,
++li,
++a,
++button {
++	overflow-wrap: anywhere;
++}
++
+ a:focus-visible,
+ button:focus-visible,
+ input:focus-visible,
+ textarea:focus-visible,
+-select:focus-visible {
+-	outline: 3px solid #b67435;
+-	outline-offset: 3px;
++select:focus-visible,
++[tabindex]:focus-visible {
++	outline: var(--wp--custom--focus--width, 3px) solid var(--mba-focus);
++	outline-offset: var(--wp--custom--focus--offset, 3px);
+ }
+ 
+ .wp-site-blocks {
+ 	min-height: 100vh;
++	overflow-x: clip;
+ }
+ 
+ .mba-site-header {
+ 	border-bottom: 1px solid var(--mba-border);
+ }
+ 
++.mba-section {
++	padding-block: var(--wp--preset--spacing--50);
++	padding-inline: var(--mba-page-gutter);
++}
++
++.mba-section--muted {
++	background: var(--wp--preset--color--mist);
++}
++
++.mba-grid {
++	display: grid;
++	grid-template-columns: minmax(0, 1fr);
++	gap: var(--wp--preset--spacing--30);
++}
++
+ .mba-card {
++	min-width: 0;
+ 	border: 1px solid var(--mba-border);
++	border-radius: var(--mba-radius);
+ 	box-shadow: var(--mba-shadow);
+ 	overflow: hidden;
++	background: var(--wp--preset--color--white);
+ }
+ 
+-.mba-card img {
++.mba-card__body {
++	padding: var(--wp--preset--spacing--30);
++}
++
++.mba-media,
++.mba-card img,
++.mba-card .wp-block-post-featured-image {
++	width: 100%;
++	aspect-ratio: var(--wp--custom--media--ratio, 4 / 3);
++	overflow: hidden;
++	background: var(--wp--preset--color--mist);
++}
++
++.mba-media img,
++.mba-card img,
++.mba-card .wp-block-post-featured-image img {
+ 	width: 100%;
+-	aspect-ratio: 4 / 3;
++	height: 100%;
+ 	object-fit: cover;
+ }
+ 
++.mba-button-row,
++.wp-block-buttons {
++	display: flex;
++	flex-wrap: wrap;
++	gap: var(--wp--preset--spacing--20);
++}
++
++.wp-element-button,
++.wp-block-button__link {
++	min-height: 44px;
++	display: inline-flex;
++	align-items: center;
++	justify-content: center;
++}
++
+ .mba-eyebrow {
+ 	letter-spacing: 0.12em;
+ 	text-transform: uppercase;
+ }
+ 
++.mba-placeholder {
++	display: grid;
++	place-items: center;
++	min-height: 12rem;
++	padding: var(--wp--preset--spacing--30);
++	border: 1px dashed var(--wp--preset--color--aluminium);
++	background: var(--wp--preset--color--mist);
++	color: var(--wp--preset--color--ink);
++	text-align: center;
++}
++
++@media (width >= 430px) {
++	:root {
++		--mba-page-gutter: clamp(1.25rem, 4vw, 2.5rem);
++	}
++}
++
++@media (width >= 768px) {
++	.mba-grid {
++		grid-template-columns: repeat(2, minmax(0, 1fr));
++		gap: var(--wp--preset--spacing--40);
++	}
++}
++
++@media (width >= 1024px) {
++	.mba-grid {
++		grid-template-columns: repeat(3, minmax(0, 1fr));
++	}
++}
++
++@media (width >= 1440px) {
++	.mba-grid--wide {
++		grid-template-columns: repeat(4, minmax(0, 1fr));
++	}
++}
++
+ @media (prefers-reduced-motion: reduce) {
+ 	html {
+ 		scroll-behavior: auto;
+@@ -58,6 +159,8 @@ select:focus-visible {
+ 	*::before,
+ 	*::after {
+ 		scroll-behavior: auto !important;
++		animation-duration: 0.01ms !important;
++		animation-iteration-count: 1 !important;
+ 		transition-duration: 0.01ms !important;
+ 	}
+ }
+diff --git a/wp-content/themes/mba-menuiseries/patterns/media-card-grid.php b/wp-content/themes/mba-menuiseries/patterns/media-card-grid.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..8cd5df7817124ee46acb35a9db0ee04e6d564b67
+--- /dev/null
++++ b/wp-content/themes/mba-menuiseries/patterns/media-card-grid.php
+@@ -0,0 +1,36 @@
++<?php
++/**
++ * Title: Media card grid placeholder
++ * Slug: mba-menuiseries/media-card-grid
++ * Categories: gallery
++ * Description: Responsive neutral cards for layout testing before approved photography is supplied.
++ */
++?>
++<!-- wp:group {"className":"mba-section mba-section--muted","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-section mba-section--muted">
++	<!-- wp:group {"className":"mba-grid mba-grid--wide","layout":{"type":"default"}} -->
++	<div class="wp-block-group mba-grid mba-grid--wide">
++		<!-- wp:group {"className":"mba-card","layout":{"type":"default"}} -->
++		<div class="wp-block-group mba-card">
++			<!-- wp:group {"className":"mba-placeholder","layout":{"type":"constrained"}} -->
++			<div class="wp-block-group mba-placeholder"><!-- wp:paragraph --><p><?php esc_html_e( 'Owner-managed image', 'mba-menuiseries' ); ?></p><!-- /wp:paragraph --></div>
++			<!-- /wp:group -->
++			<!-- wp:group {"className":"mba-card__body","layout":{"type":"constrained"}} -->
++			<div class="wp-block-group mba-card__body"><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Editable card title', 'mba-menuiseries' ); ?></h3><!-- /wp:heading --></div>
++			<!-- /wp:group -->
++		</div>
++		<!-- /wp:group -->
++		<!-- wp:group {"className":"mba-card","layout":{"type":"default"}} -->
++		<div class="wp-block-group mba-card">
++			<!-- wp:group {"className":"mba-placeholder","layout":{"type":"constrained"}} -->
++			<div class="wp-block-group mba-placeholder"><!-- wp:paragraph --><p><?php esc_html_e( 'Portrait or landscape image', 'mba-menuiseries' ); ?></p><!-- /wp:paragraph --></div>
++			<!-- /wp:group -->
++			<!-- wp:group {"className":"mba-card__body","layout":{"type":"constrained"}} -->
++			<div class="wp-block-group mba-card__body"><!-- wp:heading {"level":3} --><h3 class="wp-block-heading"><?php esc_html_e( 'Editable card title', 'mba-menuiseries' ); ?></h3><!-- /wp:heading --></div>
++			<!-- /wp:group -->
++		</div>
++		<!-- /wp:group -->
++	</div>
++	<!-- /wp:group -->
++</div>
++<!-- /wp:group -->
+diff --git a/wp-content/themes/mba-menuiseries/patterns/section-intro.php b/wp-content/themes/mba-menuiseries/patterns/section-intro.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..b44397e791fe8c8d03600b03a91e62e90bcbdffb
+--- /dev/null
++++ b/wp-content/themes/mba-menuiseries/patterns/section-intro.php
+@@ -0,0 +1,21 @@
++<?php
++/**
++ * Title: Section introduction
++ * Slug: mba-menuiseries/section-intro
++ * Categories: text
++ * Description: Neutral section heading and supporting text.
++ */
++?>
++<!-- wp:group {"className":"mba-section","layout":{"type":"constrained"}} -->
++<div class="wp-block-group mba-section">
++	<!-- wp:paragraph {"className":"mba-eyebrow"} -->
++	<p class="mba-eyebrow"><?php esc_html_e( 'Section label', 'mba-menuiseries' ); ?></p>
++	<!-- /wp:paragraph -->
++	<!-- wp:heading -->
++	<h2 class="wp-block-heading"><?php esc_html_e( 'Replace with an approved heading', 'mba-menuiseries' ); ?></h2>
++	<!-- /wp:heading -->
++	<!-- wp:paragraph -->
++	<p><?php esc_html_e( 'Replace this neutral placeholder with client-approved content in the editor.', 'mba-menuiseries' ); ?></p>
++	<!-- /wp:paragraph -->
++</div>
++<!-- /wp:group -->
+diff --git a/wp-content/themes/mba-menuiseries/theme.json b/wp-content/themes/mba-menuiseries/theme.json
+index f45e043903be94ac9d02830d44f9bb8a343c9648..86f830f832684a5ef0dff7d18ee5dbc11deaac63 100644
+--- a/wp-content/themes/mba-menuiseries/theme.json
++++ b/wp-content/themes/mba-menuiseries/theme.json
+@@ -7,31 +7,64 @@
+       "contentSize": "760px",
+       "wideSize": "1200px"
+     },
++    "border": {
++      "color": true,
++      "radius": true,
++      "style": true,
++      "width": true
++    },
+     "color": {
++      "defaultGradients": false,
+       "defaultPalette": false,
+       "palette": [
+         { "slug": "ink", "name": "Ink", "color": "#14201f" },
+-        { "slug": "aluminium", "name": "Aluminium", "color": "#687473" },
++        { "slug": "aluminium", "name": "Aluminium", "color": "#5f6b69" },
+         { "slug": "mist", "name": "Mist", "color": "#eef2f1" },
+         { "slug": "white", "name": "White", "color": "#ffffff" },
+-        { "slug": "accent", "name": "Accent", "color": "#b67435" }
++        { "slug": "accent", "name": "Accent", "color": "#8a4a14" }
+       ]
+     },
+     "spacing": {
+-      "units": ["px", "rem", "vw"],
++      "units": ["px", "rem", "%", "vw"],
+       "spacingSizes": [
++        { "slug": "10", "size": "0.5rem", "name": "XS" },
+         { "slug": "20", "size": "0.75rem", "name": "S" },
+         { "slug": "30", "size": "1.25rem", "name": "M" },
+         { "slug": "40", "size": "2rem", "name": "L" },
+-        { "slug": "50", "size": "clamp(3rem, 6vw, 6rem)", "name": "XL" }
++        { "slug": "50", "size": "clamp(2.5rem, 5vw, 5rem)", "name": "XL" },
++        { "slug": "60", "size": "clamp(4rem, 8vw, 8rem)", "name": "XXL" }
+       ]
+     },
+     "typography": {
+       "fluid": true,
+       "fontFamilies": [
+-        { "slug": "sans", "name": "Sans", "fontFamily": "Inter, system-ui, sans-serif" },
+-        { "slug": "display", "name": "Display", "fontFamily": "Georgia, serif" }
++        { "slug": "sans", "name": "Sans", "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif" },
++        { "slug": "display", "name": "Display", "fontFamily": "Georgia, \"Times New Roman\", serif" }
++      ],
++      "fontSizes": [
++        { "slug": "small", "name": "Small", "size": "0.875rem" },
++        { "slug": "medium", "name": "Medium", "size": "1rem" },
++        { "slug": "large", "name": "Large", "size": "clamp(1.125rem, 1rem + 0.5vw, 1.375rem)" },
++        { "slug": "x-large", "name": "XL", "size": "clamp(1.75rem, 1.25rem + 2vw, 3rem)" },
++        { "slug": "xx-large", "name": "XXL", "size": "clamp(2.25rem, 1.5rem + 3.5vw, 4.75rem)" }
+       ]
++    },
++    "custom": {
++      "border": {
++        "subtle": "#d7dddc",
++        "radius": "2px"
++      },
++      "focus": {
++        "color": "#075985",
++        "offset": "3px",
++        "width": "3px"
++      },
++      "media": {
++        "ratio": "4 / 3"
++      },
++      "shadow": {
++        "card": "0 18px 45px rgb(20 32 31 / 10%)"
++      }
+     }
+   },
+   "styles": {
+@@ -39,23 +72,51 @@
+       "background": "var:preset|color|white",
+       "text": "var:preset|color|ink"
+     },
+-    "spacing": { "blockGap": "1.5rem" },
++    "spacing": {
++      "blockGap": "1.5rem"
++    },
+     "typography": {
+       "fontFamily": "var:preset|font-family|sans",
+-      "fontSize": "1rem",
++      "fontSize": "var:preset|font-size|medium",
+       "lineHeight": "1.65"
+     },
+     "elements": {
+       "button": {
+-        "border": { "radius": "2px" },
+-        "color": { "background": "var:preset|color|ink", "text": "var:preset|color|white" },
+-        "spacing": { "padding": { "top": "0.8rem", "right": "1.25rem", "bottom": "0.8rem", "left": "1.25rem" } },
+-        "typography": { "fontWeight": "650" }
++        "border": {
++          "radius": "var:custom|border|radius"
++        },
++        "color": {
++          "background": "var:preset|color|ink",
++          "text": "var:preset|color|white"
++        },
++        "spacing": {
++          "padding": {
++            "top": "0.8rem",
++            "right": "1.25rem",
++            "bottom": "0.8rem",
++            "left": "1.25rem"
++          }
++        },
++        "typography": {
++          "fontWeight": "650",
++          "lineHeight": "1.2"
++        }
+       },
+       "heading": {
+-        "typography": { "fontFamily": "var:preset|font-family|display", "fontWeight": "500", "lineHeight": "1.12" }
++        "typography": {
++          "fontFamily": "var:preset|font-family|display",
++          "fontWeight": "500",
++          "lineHeight": "1.12"
++        }
+       },
+-      "link": { "color": { "text": "var:preset|color|ink" } }
++      "link": {
++        "color": {
++          "text": "var:preset|color|ink"
++        },
++        "typography": {
++          "textDecoration": "underline"
++        }
++      }
+     }
+   },
+   "templateParts": [
+@@ -63,4 +124,3 @@
+     { "name": "footer", "title": "Footer", "area": "footer" }
+   ]
+ }
+-
