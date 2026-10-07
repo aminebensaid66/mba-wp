@@ -67,8 +67,9 @@ function mba_theme_render_product_archive(): string {
 		'post_status'    => 'publish',
 		'posts_per_page' => 9,
 		'paged'          => max( 1, (int) get_query_var( 'paged' ) ),
-		'orderby'        => 'date',
-		'order'          => 'DESC',
+		'meta_key'       => 'mba_display_order',
+		'orderby'        => 'meta_value_num',
+		'order'          => 'ASC',
 	);
 	if ( count( $tax_query ) > 1 ) {
 		$args['tax_query'] = $tax_query;

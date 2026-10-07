@@ -49,6 +49,9 @@ function mba_theme_enqueue_assets(): void {
 		array(),
 		file_exists( $path ) ? (string) filemtime( $path ) : '0.1.0'
 	);
+	if ( is_front_page() ) {
+		wp_enqueue_script( 'mba-home-motion', get_theme_file_uri( 'assets/js/home-motion.js' ), array(), mba_theme_asset_version( 'assets/js/home-motion.js' ), true );
+	}
 	if ( is_singular( 'mba_project' ) ) {
 		wp_enqueue_script( 'mba-project-gallery', get_theme_file_uri( 'assets/js/project-gallery.js' ), array(), mba_theme_asset_version( 'assets/js/project-gallery.js' ), true );
 	}
