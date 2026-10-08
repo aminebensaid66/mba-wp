@@ -1606,6 +1606,108 @@ header.wp-block-template-part {
 	}
 }
 
+/* Homepage motion: staggered cards, floating hero, scroll-aware header. */
+.mba-reveal .mba-card,
+.mba-reveal li {
+	transform: translateY(28px);
+	opacity: 0;
+	transition: opacity 600ms ease, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms ease;
+	transition-delay: calc(var(--mba-i, 0) * 110ms + 120ms);
+}
+
+.mba-reveal.is-visible .mba-card,
+.mba-reveal.is-visible li {
+	transform: none;
+	opacity: 1;
+}
+
+.mba-reveal.is-visible .mba-card:hover {
+	transform: translateY(-6px);
+	transition-delay: 0ms;
+}
+
+.mba-home-hero__visual {
+	translate: 0 var(--mba-parallax, 0);
+}
+
+.mba-home-hero__media {
+	animation: mba-float 7s 1s ease-in-out infinite alternate;
+}
+
+.mba-home-hero__media img {
+	animation: mba-zoom 18s ease-in-out infinite alternate;
+}
+
+.mba-home-hero .wp-element-button {
+	position: relative;
+	overflow: hidden;
+}
+
+.mba-home-hero .wp-element-button::after {
+	position: absolute;
+	inset: 0 auto 0 -60%;
+	width: 40%;
+	background: linear-gradient(100deg, transparent, rgb(255 255 255 / 45%), transparent);
+	content: '';
+	animation: mba-shine 4.5s 1.6s ease-in-out infinite;
+}
+
+.mba-eyebrow::before {
+	display: inline-block;
+	width: 0;
+	height: 1px;
+	margin-inline-end: 0;
+	background: currentcolor;
+	content: '';
+	vertical-align: middle;
+	transition: width 700ms 250ms ease, margin 700ms 250ms ease;
+}
+
+.mba-home-hero .mba-eyebrow::before,
+.is-visible .mba-eyebrow::before {
+	width: 2rem;
+	margin-inline-end: 0.75rem;
+}
+
+.mba-site-header {
+	transition: box-shadow 250ms ease;
+}
+
+.mba-header-inner {
+	transition: min-height 250ms ease;
+}
+
+.mba-scrolled .mba-site-header {
+	box-shadow: 0 10px 30px rgb(22 39 32 / 10%);
+}
+
+.mba-scrolled .mba-header-inner {
+	min-height: 4.25rem;
+}
+
+@keyframes mba-float {
+	to {
+		transform: translateY(-14px);
+	}
+}
+
+@keyframes mba-zoom {
+	to {
+		transform: scale(1.08);
+	}
+}
+
+@keyframes mba-shine {
+	0%,
+	60% {
+		left: -60%;
+	}
+
+	100% {
+		left: 130%;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
@@ -1624,7 +1726,9 @@ header.wp-block-template-part {
 		display: none;
 	}
 
-	.mba-reveal {
+	.mba-reveal,
+	.mba-reveal .mba-card,
+	.mba-reveal li {
 		transform: none;
 		opacity: 1;
 	}

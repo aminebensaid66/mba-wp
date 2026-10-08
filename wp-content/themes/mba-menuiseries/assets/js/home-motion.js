@@ -5,6 +5,29 @@
 		return;
 	}
 
+	const root = document.documentElement;
+	const visual = document.querySelector('.mba-home-hero__visual');
+	let ticking = false;
+	const onScroll = () => {
+		const y = window.scrollY;
+		root.classList.toggle('mba-scrolled', y > 24);
+		if (visual && y < window.innerHeight) {
+			visual.style.setProperty('--mba-parallax', `${Math.round(y * -0.12)}px`);
+		}
+		ticking = false;
+	};
+	window.addEventListener(
+		'scroll',
+		() => {
+			if (!ticking) {
+				ticking = true;
+				window.requestAnimationFrame(onScroll);
+			}
+		},
+		{ passive: true }
+	);
+	onScroll();
+
 	const sections = document.querySelectorAll(
 		'.mba-homepage > section:not(.mba-home-hero), .mba-home-marquee'
 	);
@@ -26,9 +49,12 @@
 	);
 
 	sections.forEach((section) => {
+		section.querySelectorAll('.mba-card, li').forEach((item, index) => {
+			item.style.setProperty('--mba-i', String(index % 6));
+		});
 		section.classList.add('mba-reveal');
 		observer.observe(section);
 	});
 
-	document.documentElement.classList.add('mba-motion-ready');
+	root.classList.add('mba-motion-ready');
 })();
