@@ -16,13 +16,14 @@ $gzip_size = static function ( string $path ) use ( $fail ): int {
 
 $css_path = $theme . '/assets/css/site.css';
 $css_gzip = $gzip_size( $css_path );
-$css_gzip <= 5 * 1024 || $fail( sprintf( 'Theme CSS exceeds its 5 KiB gzip budget (%d bytes).', $css_gzip ) );
+$css_gzip <= 7 * 1024 || $fail( sprintf( 'Theme CSS exceeds its 7 KiB gzip budget (%d bytes).', $css_gzip ) );
 
 $assets = array(
 	'theme navigation' => $theme . '/assets/js/navigation.js',
 	'mobile conversion' => $theme . '/assets/js/mobile-conversion.js',
 	'project gallery' => $theme . '/assets/js/project-gallery.js',
 	'consent-gated map' => $theme . '/assets/js/contact-map.js',
+	'homepage motion' => $theme . '/assets/js/home-motion.js',
 	'optional analytics manager' => $root . '/wp-content/plugins/mba-site-core/assets/js/analytics.js',
 );
 $js_gzip = 0;

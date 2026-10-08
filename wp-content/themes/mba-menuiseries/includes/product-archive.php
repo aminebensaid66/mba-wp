@@ -67,8 +67,23 @@ function mba_theme_render_product_archive(): string {
 		'post_status'    => 'publish',
 		'posts_per_page' => 9,
 		'paged'          => max( 1, (int) get_query_var( 'paged' ) ),
-		'orderby'        => 'date',
-		'order'          => 'DESC',
+		// Products without a saved display order must still be listed.
+		'meta_query'     => array(
+			'relation'      => 'OR',
+			'display_order' => array(
+				'key'     => 'mba_display_order',
+				'compare' => 'EXISTS',
+				'type'    => 'NUMERIC',
+			),
+			array(
+				'key'     => 'mba_display_order',
+				'compare' => 'NOT EXISTS',
+			),
+		),
+		'orderby'        => array(
+			'display_order' => 'ASC',
+			'date'          => 'DESC',
+		),
 	);
 	if ( count( $tax_query ) > 1 ) {
 		$args['tax_query'] = $tax_query;
